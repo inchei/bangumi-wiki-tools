@@ -1,322 +1,80 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Bangumi (bgm.tv) wiki automation monorepo: `bgq/` (Go CLI + Svelte Web UI over DuckDB), root Python scripts, and 4 Tampermonkey userscripts (`wikiBatch`, `wikiPersonAlias`, `wikiMissingPositions`, plus `filters/` YAML configs run in CI).
+License: GPL-3.0-only (see LICENSE).
 
-**IMPORTANT: NEVER commit changes unless the user explicitly asks you to. The pre-commit hook auto-bumps version numbers and builds dist files, so committing has permanent side effects. Always ask before committing.**
+bgq CSV output feeds into wikiBatch for batch editing.
+`wikiBatch` and `wikiMissingPositions` are separate userscripts with separate codebases and build systems — never confuse them or search one when the other is referenced.
 
-## Repository Overview
+## Commands
 
-This is a monorepo for [Bangumi](https://bgm.tv) wiki automation:
-
-1. **`bgq/`** — Go CLI + Web UI for high-performance subject filtering via DuckDB SQL
-2. **`wikiBatch/`** — Tampermonkey userscript for batch wiki editing on next.bgm.tv
-3. **`wikiPersonAlias/`** — Tampermonkey userscript for person alias lookup via IndexedDB (provides `window.personAliasQuery` / `window.personAliasQueryAll`)
-4. **`wikiMissingPositions/`** — Tampermonkey userscript for pre-creating persons and one-click completion of missing staff/episode associations
-5. **Root** — Python scripts for duplicate ISBN detection, archive download, CI automation
-6. **`filters/`** — YAML filter configs executed by bgq in CI, results uploaded to GitHub Releases
-
-bgq CSV output feeds directly into wikiBatch for batch editing.
-
-**Important: `wikiBatch` and `wikiMissingPositions` are completely separate Tampermonkey userscripts with different purposes, different codebases, and different build systems. Never confuse them or search one when the other is referenced.**
-
-## Build & Development Commands
-
-### Backend (Go)
+Go (`bgq/`):
 
 ```bash
 cd bgq
 
-# Build (run `go generate ./...` first to build frontend + embed dist, or `go generate ./internal/server/` after frontend changes)
+go generate ./...                          # build frontend + embed dist (or ./internal/server/ after frontend changes)
 go build -o bin/bgq ./cmd/bgq/
-go test ./internal/query/ -v -execute      # Run tests (snapshot + DuckDB execution)
-go test ./internal/query/ -update -execute # Regenerate golden file + verify with DuckDB
-go test ./internal/query/ -run TestAllCombinations -v  # Single test
-go test ./cmd/bgq/ -run TestBuildCheckSQL -v           # Missing subjects SQL tests
+go test ./internal/query/ -v -execute      # snapshot + DuckDB execution
+go test ./internal/query/ -update -execute # regenerate golden file + verify with DuckDB
 
-gofmt -w .                                 # Format
-go vet ./...                               # Static analysis
-go tool golangci-lint run ./...            # Lint
-go tool deadcode ./...                   # Unreachable functions
-# After modifying Go code, run all three above before committing
+gofmt -w .                                 # run all three after changing Go code
+go vet ./...
+go tool golangci-lint run ./...
+go tool deadcode ./...
 
 ./bin/bgq query --config query.yaml --data-dir ./bangumi_archive
 ./bin/bgq serve --data-dir ./bangumi_archive --listen :8080
 ./bin/bgq serve --data-dir ./bangumi_archive --db bangumi.db --aliases-file person_alias.json
-./bin/bgq serve --dev                      # Hot reload (Air)
+./bin/bgq serve --dev                      # hot reload (Air)
 ./bin/bgq missing subjects "川原砾" --type 1
 ./bin/bgq missing episodes "川原砾"
 ```
 
-### Frontend (Svelte)
-
-> The 4 pnpm projects (`bgq/frontend`, `wikiBatch`, `wikiPersonAlias`, `wikiMissingPositions`) share a **single root pnpm workspace** (`pnpm-workspace.yaml` at repo root, one `pnpm-lock.yaml`). Install from the repo root:
-> ```bash
-> pnpm install                               # one command installs all 4 projects
-> pnpm -r update                             # update all projects' deps
-> pnpm audit                                 # audit all 4 projects at once
-> ```
-> Commands run inside any package dir still work (pnpm walks up to the workspace root).
-
-```bash
-cd bgq/frontend
-
-pnpm dev                                   # Dev server (hot reload)
-pnpm build                                 # Build (output embedded in Go binary; copied to internal/server/dist via go generate ./internal/server/)
-
-pnpm lint                                  # ESLint (JS/Svelte)
-pnpm lint:css                              # Stylelint (CSS/Svelte styles)
-pnpm lint:css:fix                          # Stylelint auto-fix
-pnpm format                                # Prettier format
-pnpm format:check                          # Check formatting (CI)
-# Pre-commit hook (.husky/pre-commit) runs automatically:
-#   - Go files: gofmt + go vet + golangci-lint + go test
-#   - wikiMissingPositions: bump version (header.js) → eslint + stylelint + prettier + build (auto-adds dist/)
-#   - wikiPersonAlias: bump version → eslint + prettier
-#   - wikiBatch: bump version (header.js) → eslint + stylelint + typecheck + build (auto-adds dist/)
-#   - Frontend (bgq): lint-staged (ESLint incl. sonarjs + Stylelint + Prettier) + knip
-# Setup: git config core.hooksPath .husky (run once after clone)
-```
-
-### DuckDB CLI (runtime dependency)
+DuckDB CLI is an external runtime dependency (not embedded). Path resolution: `DUCKDB_PATH` → `bin/duckdb` → `PATH`.
 
 ```bash
 curl -L https://github.com/duckdb/duckdb/releases/download/v1.5.4/duckdb_cli-linux-amd64.zip -o duckdb.zip
 unzip duckdb.zip -d bgq/bin/
 ```
 
-Path resolution: `DUCKDB_PATH` env → `bin/duckdb` (relative to executable) → `PATH`.
-
-## Architecture (`bgq/`)
-
-```
-bgq/
-├── cmd/
-│   ├── bgq/
-│   │   ├── main.go                   # CLI entry + subcommands (query, serve, ingest, missing, version)
-│   │   ├── missing.go                # `missing` CLI subcommand dispatcher
-│   │   ├── missing_subjects.go       # Missing subjects (staff) check logic + HTTP handler
-│   │   ├── missing_subjects_test.go  # Tests for buildCheckSQL SQL generation
-│   │   ├── missing_episodes.go       # Missing episodes (staff) check logic + HTTP handler
-│   │   ├── missing_episodes_test.go  # Tests for expandAppearEps, epLabel, resolveOverlaps, etc.
-│   │   ├── aliases.go                # Person alias lookup endpoint (/api/aliases/{alias})
-│   │   ├── server.go                 # HTTP server + API handlers
-│   │   └── dev.go                    # Air hot-reload dev mode
-│   ├── missing-persons/
-│   │   └── main.go           # Offline missing-persons report CLI
-│   └── gen-model/
-│       ├── main.go           # Code generator (platforms, relations, staff, meta tags)
-│       └── templates/        # Go + JS templates for code generation
-├── internal/
-│   ├── aliases/          # Person alias normalization + person_alias.json loading
-│   ├── missingpersons/   # Offline missing-persons analysis + HTML report
-│   │   ├── load.go           # Load persons/characters/subjects from archive/DB
-│   │   ├── match.go          # Missing-person detection
-│   │   ├── names.go          # Name noise filtering + variant normalization
-│   │   ├── related.go        # Related-person detection + already-linked filtering
-│   │   ├── render.go         # HTML/search page rendering
-│   │   ├── run.go            # Run entry point
-│   │   ├── stats.go          # Stats JSON
-│   │   └── templates/        # Report HTML/JS/CSS
-│   ├── model/            # Bangumi domain constants
-│   │   ├── model.go          # Go structs matching JSONLines schema
-│   │   ├── helpers.go        # Lookup helpers (PlatformsByType, RelationsByType, etc.)
-│   │   ├── generate.go       # go generate directive
-│   │   ├── platform.go       # Platform codes (auto-generated)
-│   │   ├── relation_data.go  # Relation type maps (auto-generated)
-│   │   ├── staff_data.go     # Staff position maps (auto-generated)
-│   │   └── metatags.go       # Meta tag lists per subject type (auto-generated)
-│   ├── config/           # YAML/JSON config parsing + filter types
-│   │   └── config.go
-│   ├── query/            # SQL generation + DuckDB execution
-│   │   ├── builder.go        # Config → DuckDB SQL (shared logic)
-│   │   ├── builder_generic.go # Generic filter SQL generation
-│   │   ├── builder_target.go  # Target-specific SQL (subject/person/character/episode)
-│   │   └── engine.go         # DuckDB subprocess wrapper
-│   └── server/           # Embedded SPA
-│       ├── webui.go          # //go:embed dist/* + go:generate 前端构建 (static files)
-│       └── dist/             # Frontend build output (copied from frontend/dist)
-├── frontend/             # Svelte SPA source
-│   ├── src/
-│   │   ├── main.js           # Entry point
-│   │   ├── App.svelte        # Root component
-│   │   ├── api.js            # Backend API calls (query only)
-│   │   ├── schema-data.js    # Auto-generated schema constants (go generate)
-│   │   ├── stores.js         # Global state (filters, conditions)
-│   │   ├── columns.js        # Association output columns: prefix registry, token parse/build, 3-stage autocomplete
-│   │   ├── yaml.js           # YAML parse/generate (js-yaml)
-│   │   └── components/
-│   │       ├── FilterTree.svelte      # Recursive filter tree
-│   │       ├── ConditionRow.svelte    # Single condition row
-│   │       ├── AwesompleteInput.svelte # Autocomplete input
-│   │       ├── ResultTable.svelte     # Query results table
-│   │       ├── QuerySettings.svelte   # Output columns, limit, sort
-│   │       ├── YamlEditor.svelte      # YAML import/export
-│   │       └── conditions/
-│   │           └── RelationCondition.svelte  # Reusable relation-like condition
-│   ├── eslint.config.js
-│   ├── .stylelintrc.json
-│   ├── .prettierrc
-│   ├── .prettierignore
-│   ├── vite.config.js
-│   └── package.json
-├── Dockerfile
-├── docker-entrypoint.sh
-└── go.mod
-```
-
-### Data Flow
-
-1. YAML config → `config.Config` struct
-2. `query.SQLBuilder` translates config into DuckDB SQL
-3. `query.Engine` invokes DuckDB CLI subprocess (`-csv` mode)
-4. CSV output parsed → `QueryResult` → terminal table / CSV / JSON / API response
-
-### Query Targets
-
-Four query targets supported via `config.Config.Target`:
-- `subject` (default) — query subjects (条目)
-- `person` — query persons (人物)
-- `character` — query characters (角色)
-- `episode` — query episodes (剧集)
-
-### Key Design Decisions
-
-- **DuckDB is an external CLI, not embedded.** Avoids CGo. Path resolved from `DUCKDB_PATH`, `bin/duckdb`, or `PATH`.
-- **Data source flexibility.** JSONLines via `read_json_auto()` CTEs, or pre-built DuckDB database (`bgq ingest`).
-- **Infobox fields are wiki-text.** `|key: value` template string, extracted via `regexp_extract()`.
-- **Chinese field names as primary keys.** Relations and positions referenced by Chinese names (e.g., `单行本`, `原作`), resolved to numeric IDs via maps in `internal/model/`.
-- **Schema data auto-generated to frontend.** `go generate` in `internal/model/` produces `schema-data.js` (platforms, relations, positions, meta tags) from bangumi/common YAML + archive data. Frontend imports these constants directly — no runtime API calls for schema.
-- **Frontend embedded in Go binary.** `go generate ./internal/server/` runs `pnpm build` and copies `frontend/dist/` to `internal/server/dist/`, embedded via `//go:embed dist/*`.
-
-### Security Decisions (bgq)
-
-- **DuckDB external access locked down in db mode.** With `--db`/`database` set, `Engine.executeSQL` prepends `SET enable_external_access=false` (`internal/query/engine.go`), disabling `COPY`, file readers (`read_csv`/`glob`/`read_text`), and extension INSTALL/LOAD. JSON-dir mode and `ingest` keep file access.
-- **Output-column labels are quote-escaped.** Columns/sort parameters are user-controlled; labels are built with `quotedLabel()` (`quotedLabel` is defined in `internal/query/builder_util.go`) instead of string interpolation.
-- **Server errors reply generic text with a request ID.** HTTP handlers return `查询失败（请求 ID: xxxx）`; the full engine error (SQL text, tmp path, stderr) goes only to the server log with the same ID. Never add `err.Error()` back to the response. Userscripts must treat the ID as opaque.
-
-### Filter Types (exactly-one union pattern)
-
-Each `config.Filter` holds exactly one non-nil pointer field:
-- `Type` — subject type (书籍/动画/音乐/游戏/三次元)
-- `Field` — direct JSON or infobox field with operator (eq/contains/regex/gt/gte/lt/lte/before/after)
-- `Global` — full-text search across infobox
-- `Tag` / `MetaTag` — tag filtering with optional negation (requires explicit `operator`)
-- `Relation` — related-subject filtering with nested conditions (any/all/none/count)
-- `Staff` — person/staff filtering by position (any/all/none/count)
-- `Character` — character filtering (any/all/none/count)
-- `PersonCharacter` / `CharacterPerson` — person-character association filtering (any/all/none/count)
-- `Episode` — episode-level filtering (any/all/count)
-- `Logic` — combine child filters with AND/OR
-
-Nested conditions (relation/staff/episode) support the same filter types recursively.
-Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` (threshold with `count_op`/`count_val`).
-
-### Web Server API
-
-`bgq serve` exposes:
-- `POST /api/query` — accepts `filters` (JSON)
-- `GET /api/health` — health check
-- `GET /api/debug` — DuckDB/data diagnostics
-- `GET /api/persons/{name}/missing-subjects?type=<type>&position=<pos>` — find subjects missing a person's staff entry for given positions
-- `GET /api/persons/{name}/missing-episodes` — find episodes whose description mentions a person but lack a corresponding staff entry
-- `GET /api/aliases/{alias}` — returns `[{name, id}, ...]` array of all persons with the given alias (requires `--aliases-file` at startup; serves as backend for `wikiPersonAlias` userscript and `wikiMissingPositions`)
-- `/` — embedded SPA; static files (images, CSS) served from embedded `dist/`
-
-## Filters (`filters/`)
-
-YAML filter configs executed in CI. Each produces a CSV with an `id` column, usable as wikiBatch input.
-
-| Filter | Description |
-|--------|-------------|
-| novel-series-manga-volumes | Novel series with manga-format volumes |
-| manga-series-novel-volumes | Manga series with novel-format volumes |
-| numbered-title-marked-series | Numbered titles incorrectly marked as series |
-| non-series-linked-volumes | Non-series subjects linked to volumes |
-| series-with-isbn | Series with ISBN (9784-prefix only) |
-| serialization-ended-no-complete-tag | Has serialization end date but missing 已完结 meta tag |
-| numbered-volumes-no-series | Numbered volumes not linked to a series |
-| novel-missing-novel-tag | Novel platform without 小说 meta tag (no series relation) |
-| manga-missing-manga-tag | Manga platform without 漫画 meta tag (no series relation) |
-| missing-author | Has 作者 staff but infobox 作者 field empty |
-
-Run all filters: see `README.md` for the batch command.
-
-## CI
-
-Two separate workflows:
-
-1. **`bangumi_data.yml`** — Weekly Tuesday cron. Downloads archive, runs duplicate ISBN check, generates person alias, executes filters. Publishes results (HTML + CSV + alias gz) to GitHub Pages `_site`.
-2. **`bgq_build.yml`** — Triggered on push to `bgq/**`. Cross-compiles bgq for linux/amd64, darwin/arm64, darwin/amd64, windows/amd64 + bundles DuckDB CLI. Publishes to `latest` Release.
-
-Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
-
-## Duplication Check (jscpd, on-demand)
-
-jscpd is intentionally **not** in dependencies, hooks, or CI — run it manually when refactoring. Test fixtures (`builder_snapshot_test.go`, `internal/missingpersons` cases) and Svelte template branches duplicate by design; only cross-file logic clones are worth fixing.
+pnpm — one root workspace (`bgq/frontend`, `wikiBatch`, `wikiPersonAlias`, `wikiMissingPositions`), one lockfile. Install from the repo root; commands inside a package dir still work.
 
 ```bash
-cd bgq
-pnpm dlx jscpd@latest . --format go,js,svelte,css --min-lines 10 --min-tokens 40 \
-  --reporters console --output /tmp/opencode/jscpd-bgq \
-  --ignore "**/node_modules/**,**/dist/**,**/bin/**,**/internal/model/templates/**,**/cmd/gen-model/templates/**"
+pnpm install          # installs all 4 projects
+pnpm -r update        # update deps
+pnpm audit
+
+cd bgq/frontend
+pnpm dev              # dev server (hot reload)
+pnpm build            # build; embed into the Go binary via go generate ./internal/server/
+pnpm lint             # ESLint (JS/Svelte)
+pnpm lint:css         # Stylelint (CSS/Svelte)
+pnpm lint:css:fix
+pnpm format           # Prettier
+pnpm format:check
 ```
 
-Baseline (2026-09, after cleanup): 1.03% overall (Go 2.10%). Already fixed: `cmd/bgq/missing.go` ↔ `missing_episodes.go` shared episode core (`collectEpMatches`, `queryLinked`, `buildEpSearchSQL`, `splitMatched`, flag helpers), `cmd/gen-model/main.go` meta_tags loops (`collectMetaTags`, `sortedTagLists`), `internal/query/builder.go` (`buildClauses` delegates to `buildClausesWithOp`). Remaining clones are intentional: test fixtures (`builder_snapshot_test.go`, `internal/missingpersons` cases), Svelte template branches, and small same-file builder repetitions.
+Pre-commit hook (`.husky/pre-commit`) runs automatically and is where quality is enforced: Go (gofmt + vet + golangci-lint + test), wikiBatch/wikiMissingPositions (bump version → lint → build, auto-adds `dist/`), wikiPersonAlias (bump version → lint), bgq frontend (lint-staged + knip).
+Setup after clone: `git config core.hooksPath .husky`.
 
-## Code Style
+## Conventions
 
-DO NOT add code comments unless explicitly asked. Never pre-emptively explain new code with comments; if a comment is truly needed, ask or let the user request it.
+- pnpm only (never npm/yarn); Python tooling via `uv` (scripts use PEP 723 inline metadata, e.g. `uv run person_alias.py`).
+- Conventional commits, one-line English title: `feat(bgq): ...`, `fix(bgq): ...`, `docs: ...`, `chore: ...`.
+- NEVER commit unless the user explicitly asks — the hook auto-bumps versions and rebuilds `dist/`.
+- No code comments unless explicitly asked.
+- Go features live behind JSONL archive data or a pre-ingested DuckDB db; infobox fields are wiki-text extracted with `regexp_extract()`.
+- Quote-escape user-controlled output columns/sort labels (`quotedLabel()` in `internal/query/builder_util.go`), never interpolate.
+- In db mode, `Engine.executeSQL` prepends `SET enable_external_access=false`; HTTP handlers return a generic `查询失败（请求 ID: xxxx）` with the detail logged server-side — never put `err.Error()` in a response.
+- jscpd runs on-demand only (not in deps/hooks/CI); test fixtures and Svelte branches duplicate by design.
 
-## Commit Conventions
+## Layout
 
-Use conventional commits with scope parentheses. Commit messages must be in English, one-line title only (no detailed body).
-Examples: `feat(bgq): add new feature`, `fix(bgq): resolve bug`, `docs: update readme`.
-
-## Key Files
-
-- `bgq/internal/config/config.go` — Filter type definitions + YAML/JSON parsing
-- `bgq/internal/query/builder.go` — SQL generation (shared logic)
-- `bgq/internal/query/builder_generic.go` — Generic filter SQL generation
-- `bgq/internal/query/builder_target.go` — Target-specific SQL (subject/person/character/episode)
-- `bgq/internal/query/engine.go` — DuckDB subprocess, CSV parsing
-- `bgq/internal/model/helpers.go` — RelationTypes grouping map (per-type lookup helpers removed as deadcode-confirmed dead code)
-- `bgq/cmd/gen-model/main.go` — Code generator for schema constants (run via `go generate`)
-- `bgq/cmd/bgq/main.go` — CLI dispatch + ingest logic
-- `bgq/cmd/bgq/missing.go` — `missing` CLI subcommand dispatcher (subjects, episodes)
-- `bgq/cmd/bgq/missing_subjects.go` — Missing subjects (staff) check: `buildCheckSQL` + HTTP handler
-- `bgq/cmd/bgq/missing_subjects_test.go` — Tests for `buildCheckSQL` SQL generation
-- `bgq/cmd/bgq/missing_episodes.go` — Missing episodes check: `handleMissingEpisodes` + position matching + episode label helpers
-- `bgq/cmd/bgq/missing_episodes_test.go` — Tests for `expandAppearEps`, `epLabel`, `resolveOverlaps`, `buildEpPositionTable`
-- `bgq/cmd/bgq/aliases.go` — Person alias lookup handler (`handleAliases`, hot reload); delegates to `internal/aliases` for `Load`/`Normalize`
-- `bgq/cmd/bgq/server.go` — HTTP server + API handlers (including aliases loading from `--aliases-file`)
-- `bgq/cmd/missing-persons/main.go` — Offline missing-persons report CLI entry
-- `bgq/internal/aliases/aliases.go` — `Load` (person_alias.json) + `Normalize` (shared with Python/JS)
-- `bgq/internal/missingpersons/` — Missing-persons analysis + HTML report (`Run`, name/variant rules, loaders, rendering, stats)
-- `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*` + `go:generate` frontend build
-- `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)
-- `bgq/frontend/src/stores.js` — Frontend global state (filters, conditions, logic tree)
-- `wikiMissingPositions/` — Pre-create person / one-click completion userscript
-- `wikiPersonAlias/` — Person alias IndexedDB lookup userscript (provides `window.personAliasQuery/QueryAll`)
-- `wikiBatch/` — Batch wiki editor userscript (completely separate from wikiMissingPositions)
-
-## Person Alias System
-
-`person_alias.py` generates `person_alias.json` (served as `person_alias.json.gz` from GitHub Pages `_site`), which maps normalized aliases to person indices (one-to-many since the multi-result update). This data is consumed by:
-
-1. **`wikiPersonAlias.user.js`** — Tampermonkey userscript that loads `person_alias.json.gz` from GitHub Pages into IndexedDB and exposes `window.personAliasQuery(name)` (single result, with GM.notification on multi-match) and `window.personAliasQueryAll(name)` (full array).
-2. **`GET /api/aliases/{alias}`** (bgq) — Server-side endpoint that loads `person_alias.json` via `--aliases-file`. Auto-detects `../person_alias.json` and `./person_alias.json`. Hot-reloads on file change (checks mtime per request). Clients (wikiMissingPositions, wikiEpStaffRelate) query this **API first**, falling back to `window.personAlias*`.
-
-Normalization: strip spaces/hyphens, narrow kana→hiragana (U+FF66-U+FF9D), fullwidth letters→halfwidth (U+FF21-U+FF5A), fullwidth katakana→hiragana (U+30A1-U+30F6), lowercase. Identical across Python/Go/JS.
-
-`person_alias.py` uses PEP 723 inline script metadata — run via `uv run person_alias.py` (no venv setup needed).
-
-## Docker
-
-```bash
-cd bgq
-docker compose up -d --build
-```
-
-Build context is the repo root (configured via `docker-compose.yml`), so `person_alias.py` can be copied without duplication. `.dockerignore` at repo root excludes large files (`bangumi_archive`, `node_modules`, `*.db`, etc.).
-
-Dockerfile builds frontend and Go binary in separate stages. Entrypoint auto-downloads archive data and generates `person_alias.json` (via `uv run`) on first run. Volume is `/data` (persists both archive and aliases JSON). `DATA_DIR` env var defaults to `/data/bangumi_archive`.
+- `bgq/cmd/bgq/` — CLI + HTTP server; `cmd/missing-persons/` offline report; `cmd/gen-model/` schema code generator.
+- `bgq/internal/` — `config` (filter types), `query` (SQL builder + DuckDB subprocess), `model` (auto-generated domain constants), `aliases`, `missingpersons`, `server` (embedded SPA via `//go:embed dist/*`).
+- `bgq/frontend/src/` — Svelte SPA; `schema-data.js` is auto-generated by `go generate`.
+- Query targets via `config.Config.Target`: `subject` (default), `person`, `character`, `episode`; filters use an exactly-one-non-nil union with sub-modes `any`/`all`/`none`/`count`.
+- `filters/*.yaml` — CI filters producing CSVs (see `README.md` for the batch command).
+- CI: `bangumi_data.yml` (weekly archive + filters → GitHub Pages) and `bgq_build.yml` (cross-compile bgq + DuckDB → `latest` Release). Go version comes from `bgq/go.mod` (do not hardcode).
+- Person alias: `person_alias.py` → `person_alias.json`, served by `GET /api/aliases/{alias}` and by `wikiPersonAlias` via IndexedDB; normalization (strip spaces/hyphens, narrow kana→hiragana, fullwidth→halfwidth/hiragana, lowercase) is identical across Python/Go/JS.
