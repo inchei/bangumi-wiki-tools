@@ -16,7 +16,7 @@
 
 ## 快速开始
 
-1. 从 [GitHub Releases](https://github.com/inchei/bangumi-wiki-scripts/releases/latest) 下载对应平台压缩包
+1. 从 [GitHub Releases](https://github.com/inchei/bangumi-wiki-tools/releases/latest) 下载对应平台压缩包
 2. 安装 DuckDB CLI，参见[官网](https://duckdb.org/install/?environment=cli)
 3. 从 https://github.com/bangumi/Archive/releases/tag/archive 下载最新数据并解压到上述文件夹内
 4. 在上述文件夹打开终端模拟器，运行 `./bgq serve --data-dir ./bangumi_archive` （Windows 将 `./bgq` 替换为 `bgq.exe`）
@@ -40,7 +40,7 @@ chmod +x download-archive.sh
 
 ```bash
 # download-archive.sh
-curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/bgq/download-archive.sh
+curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/bgq/download-archive.sh
 chmod +x download-archive.sh
 ```
 
@@ -48,7 +48,7 @@ chmod +x download-archive.sh
 
 ```bash
 # person_alias.py
-curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/person_alias.py
+curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/person_alias.py
 
 # uv
 curl -LsSf https://astral.sh/uv/install.sh | sh

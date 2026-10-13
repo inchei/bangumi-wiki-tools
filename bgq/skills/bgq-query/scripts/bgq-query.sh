@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Find bgq root: walk up from script location
 BGQ_ROOT=""
-for dir in "$SCRIPT_DIR" "$SCRIPT_DIR/.." "$SCRIPT_DIR/../.." "$HOME/workspace/bangumi-wiki-scripts/bgq"; do
+for dir in "$SCRIPT_DIR" "$SCRIPT_DIR/.." "$SCRIPT_DIR/../.." "$HOME/workspace/bangumi-wiki-tools/bgq"; do
   if [ -f "$dir/bin/bgq" ]; then
     BGQ_ROOT="$dir"
     break

@@ -3,5 +3,5 @@ export const BANGUMI_ERROR_TEXT =
 
 export function ourApiErrorText(name) {
   const q = encodeURIComponent(name || '');
-  return `网络出错了，请检查网络或<a href="https://inchei.github.io/bangumi-wiki-scripts/missing-persons/search.html?q=${q}" class="l" target="_blank">看看有没有已经存储的结果</a>`;
+  return `网络出错了，请检查网络或<a href="https://inchei.github.io/bangumi-wiki-tools/missing-persons/search.html?q=${q}" class="l" target="_blank">看看有没有已经存储的结果</a>`;
 }

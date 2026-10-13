@@ -6,7 +6,7 @@
 
 ## 安装
 
-使用 Violentmonkey 等脚本管理器插件安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiBatch/dist/wikiBatch.user.js>
+使用 Violentmonkey 等脚本管理器插件安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiBatch/dist/wikiBatch.user.js>
 
 脚本默认仅在 <https://next.bgm.tv/> 域名下激活，可退出显示原页面，此时页面右下角会出现浮动按钮再次唤起。
 

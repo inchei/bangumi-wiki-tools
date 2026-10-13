@@ -103,8 +103,8 @@ export function switchToSetupView(): void {
                                 tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
                                 series列使用true或false表示是否标记为系列<br>
                                 infobox列将整体替换Wiki文本（其余列仍按字段名逐项更新）<br>
-                                可使用 <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）
-                                可参考 <a href="https://inchei.github.io/bangumi-wiki-scripts" target="_blank">每周自动生成任务</a>
+                                可使用 <a href="https://github.com/inchei/bangumi-wiki-tools/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）
+                                可参考 <a href="https://inchei.github.io/bangumi-wiki-tools" target="_blank">每周自动生成任务</a>
                             </p>
                         </div>
                         ${state.csvData ? `
@@ -158,7 +158,7 @@ export function switchToSetupView(): void {
 
                 </div>
                 <div class="setup-footer">
-                    <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/wikiBatch" target="_blank">
+                    <a href="https://github.com/inchei/bangumi-wiki-tools/tree/main/wikiBatch" target="_blank">
                         <morph-icon data-icon="github" size="16"></morph-icon> GitHub
                     </a>
                 </div>

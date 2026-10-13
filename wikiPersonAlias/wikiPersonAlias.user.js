@@ -28,7 +28,7 @@
 
   // 配置
   const CONFIG = {
-    dataBaseUrl: 'https://inchei.github.io/bangumi-wiki-scripts/',
+    dataBaseUrl: 'https://inchei.github.io/bangumi-wiki-tools/',
     dbName: 'bangumiPersonDB',
     dbVersion: 3,
     compressedFile: 'person_alias.json.gz',

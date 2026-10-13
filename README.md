@@ -1,6 +1,6 @@
-# bangumi-wiki-scripts [![bangumi](http://bgm.tv/img/ico/bgm80-15.png)](http://bgm.tv)
+# bangumi-wiki-tools [![bangumi](http://bgm.tv/img/ico/bgm80-15.png)](http://bgm.tv)
 
-用于 [Bangumi](https://bgm.tv) Wiki 的脚本合集。依赖[官方 Archive](https://github.com/bangumi/Archive) 数据。
+用于 [Bangumi](https://bgm.tv) Wiki 的工具和脚本合集。依赖[官方 Archive](https://github.com/bangumi/Archive) 数据。
 
 ## 工具
 
@@ -28,7 +28,7 @@
 
 ![demo](https://lsky.ry.mk/i/2026/07/30/cab358afbdbbb.webp)
 
-安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiBatch/dist/wikiBatch.user.js>
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiBatch/dist/wikiBatch.user.js>
 
 [文档](wikiBatch/README.md)
 
@@ -36,13 +36,13 @@
 
 用户脚本，将 `person_alias.json.gz` 导入 IndexedDB，提供 `window.personAliasQuery` / `window.personAliasQueryAll` 接口供其他脚本本地查询人物别名。
 
-安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiPersonAlias/wikiPersonAlias.user.js>
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiPersonAlias/wikiPersonAlias.user.js>
 
 ### wikiMissingPositions
 
 用户脚本，在条目页和人物关联页一键补完已填写但未关联的 STAFF。
 
-安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiMissingPositions/dist/wikiMissingPositions.user.js>
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiMissingPositions/dist/wikiMissingPositions.user.js>
 
 或启用[组件](https://bgm.tv/dev/app/6476)。
 
@@ -63,7 +63,7 @@
 
 ## 每周更新产物
 
-根据 Archive 更新时间，每周三凌晨（UTC+8）通过 Github Action 自动运行，发布到 [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/)（含筛选结果、缺失人物、卷序报告、人物别名 / 简中名数据文件下载）。
+根据 Archive 更新时间，每周三凌晨（UTC+8）通过 Github Action 自动运行，发布到 [GitHub Pages](https://inchei.github.io/bangumi-wiki-tools/)（含筛选结果、缺失人物、卷序报告、人物别名 / 简中名数据文件下载）。
 
 ## 备忘
 

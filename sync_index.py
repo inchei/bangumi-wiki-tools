@@ -55,7 +55,7 @@ def api(method: str, path: str, token: str, body: dict | None = None) -> tuple[i
     data = json.dumps(body).encode() if body else None
     headers = {
         "Authorization": f"Bearer {token}",
-        "User-Agent": "bangumi-wiki-scripts/sync_index",
+        "User-Agent": "bangumi-wiki-tools/sync_index",
     }
     if body is not None:
         headers["Content-Type"] = "application/json"

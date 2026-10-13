@@ -217,7 +217,7 @@
   <div class="header-actions">
     <a
       class="btn btn-default"
-      href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq"
+      href="https://github.com/inchei/bangumi-wiki-tools/tree/main/bgq"
       target="_blank"
       rel="noopener"
       title="GitHub"
