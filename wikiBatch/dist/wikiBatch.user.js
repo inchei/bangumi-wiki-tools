@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bangumi wiki 批量更新工具
 // @namespace    http://tampermonkey.net/
-// @version      1.1.1
+// @version      1.1.2
 // @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode、标签和系列状态
 // @author       You
 // @match        *://*/*
@@ -109,6 +109,7 @@
                                 series列使用true或false表示是否标记为系列<br>
                                 infobox列将整体替换Wiki文本（其余列仍按字段名逐项更新）<br>
                                 可使用 <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）
+                                可参考 <a href="https://inchei.github.io/bangumi-wiki-scripts" target="_blank">每周自动生成任务</a>
                             </p>
                         </div>
                         ${y.csvData?`

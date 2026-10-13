@@ -104,6 +104,7 @@ export function switchToSetupView(): void {
                                 series列使用true或false表示是否标记为系列<br>
                                 infobox列将整体替换Wiki文本（其余列仍按字段名逐项更新）<br>
                                 可使用 <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）
+                                可参考 <a href="https://inchei.github.io/bangumi-wiki-scripts" target="_blank">每周自动生成任务</a>
                             </p>
                         </div>
                         ${state.csvData ? `

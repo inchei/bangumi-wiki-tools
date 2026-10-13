@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bangumi wiki 批量更新工具
 // @namespace    http://tampermonkey.net/
-// @version      1.1.1
+// @version      1.1.2
 // @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode、标签和系列状态
 // @author       You
 // @match        *://*/*
