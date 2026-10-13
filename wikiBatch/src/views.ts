@@ -5,6 +5,9 @@ import {
     type WikiData,
     type HistoryEntry,
     getEntityApiConfig,
+    normalizeBaseUrl,
+    DEFAULT_API_BASE,
+    DEFAULT_BGM_BASE,
 } from './core';
 import {
     hideProgressBar,
@@ -26,7 +29,7 @@ import {
 } from './diff';
 import { getDoc, setDiffContent, WCODE_CONTAINER_ID, TAGS_CONTAINER_ID } from './cm-diff';
 import { paintStaticIcons, setLockIcon } from './morph';
-import { isRecentUpdate, resetProcessingState, CONFIRM_SHORTCUT_HINT, CONFIRM_SHORTCUT_TITLE, IS_APPLE_PLATFORM, SKIP_SHORTCUT_HINT, SKIP_SHORTCUT_TITLE, RETRY_SHORTCUT_TITLE } from './utils';
+import { isRecentUpdate, resetProcessingState, escapeHtml, CONFIRM_SHORTCUT_HINT, CONFIRM_SHORTCUT_TITLE, IS_APPLE_PLATFORM, SKIP_SHORTCUT_HINT, SKIP_SHORTCUT_TITLE, RETRY_SHORTCUT_TITLE } from './utils';
 import { handleFileUpload, handlePasteCSV } from './csv';
 
 export function switchToSetupView(): void {
@@ -60,8 +63,8 @@ export function switchToSetupView(): void {
                         <div id="patch-method-options" class="form-group ${state.submitMethod === 'patch' ? '' : 'hidden'}">
                             <label for="setup-access-token">Access Token</label>
                             <input type="password" id="setup-access-token" value="${state.accessToken}">
-                            <p class="formhash-hint">
-                                在<a href="https://next.bgm.tv/demo/access-token" target="_blank">个人令牌页</a>获取 Access Token<br>
+                            <p class="field-hint">
+                                在<a id="access-token-link" href="${state.apiBase}/demo/access-token" target="_blank">个人令牌页</a>获取 Access Token<br>
                                 限速严重可切换为旧 API
                             </p>
                         </div>
@@ -72,9 +75,9 @@ export function switchToSetupView(): void {
                                 <input type="text" id="setup-formhash" value="${state.formhash}">
                                 <button type="button" class="secondary" id="setup-fetch-formhash"><morph-icon data-icon="wand" size="16"></morph-icon> 自动获取</button>
                             </div>
-                            <p class="formhash-hint">
+                            <p class="field-hint">
                                 如何获取formhash：<br>
-                                1. 打开条目编辑页面（如 <a href="https://bgm.tv/subject/354667/edit_detail" target="_blank">https://bgm.tv/subject/354667/edit_detail</a>）<br>
+                                1. 打开条目编辑页面（如 <a id="formhash-edit-link" href="${state.bgmBase}/subject/354667/edit_detail" target="_blank">${state.bgmBase}/subject/354667/edit_detail</a>）<br>
                                 2. 在浏览器控制台执行：<code>document.querySelector('[name=formhash]').value</code><br>
                                 3. 将返回的值复制到上方输入框<br>
                                 <strong>自动获取</strong>：通过后台请求编辑页面自动提取 formhash（需已登录）
@@ -95,7 +98,7 @@ export function switchToSetupView(): void {
                             </div>
                             <input type="file" id="setup-csv-file" accept=".csv" class="file-upload-input">
                             ${state.csvData ? `<div class="csv-loaded-info">已加载CSV: ${state.csvData.length} 条记录</div>` : ''}
-                            <p class="csv-hint">
+                            <p class="field-hint">
                                 必备ID列，条目id，人物person_id，角色character_id<br>
                                 tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
                                 series列使用true或false表示是否标记为系列<br>
@@ -113,6 +116,25 @@ export function switchToSetupView(): void {
                             <button id="setup-reset-progress" class="secondary setup-reset-btn">重置进度</button>
                         </div>
                         ` : ''}
+                    </div>
+                </div>
+                <h3 class="section-title">地址配置</h3>
+                <div class="address-config">
+                    <div class="form-group">
+                        <label for="setup-api-base">API 地址</label>
+                        <input type="text" id="setup-api-base" value="${escapeHtml(state.apiBase)}" placeholder="${DEFAULT_API_BASE}">
+                        <p class="field-hint">
+                            Private API 基地址<br>
+                            默认 <a href="${DEFAULT_API_BASE}" target="_blank">${DEFAULT_API_BASE}</a>
+                        </p>
+                    </div>
+                    <div class="form-group">
+                        <label for="setup-bgm-base">Bangumi 地址</label>
+                        <input type="text" id="setup-bgm-base" value="${escapeHtml(state.bgmBase)}" placeholder="${DEFAULT_BGM_BASE}">
+                        <p class="field-hint">
+                            用于提交更新与跳转的 bgm.tv 站点基地址<br>
+                            默认 <a href="${DEFAULT_BGM_BASE}" target="_blank">${DEFAULT_BGM_BASE}</a>
+                        </p>
                     </div>
                 </div>
                 <div class="sync-section">
@@ -157,6 +179,23 @@ export function switchToSetupView(): void {
         });
     }
 
+    bindBaseInput('setup-api-base', DEFAULT_API_BASE, (value) => {
+        state.apiBase = value;
+        GM_setValue('bgmApiBase', state.apiBase);
+        const link = document.getElementById('access-token-link') as HTMLAnchorElement | null;
+        if (link) link.href = `${value}/demo/access-token`;
+    });
+    bindBaseInput('setup-bgm-base', DEFAULT_BGM_BASE, (value) => {
+        state.bgmBase = value;
+        GM_setValue('bgmBgmBase', state.bgmBase);
+        const link = document.getElementById('formhash-edit-link') as HTMLAnchorElement | null;
+        if (link) {
+            const url = `${value}/subject/354667/edit_detail`;
+            link.href = url;
+            link.textContent = url;
+        }
+    });
+
     const formhashInput = document.getElementById('setup-formhash') as HTMLInputElement | null;
     if (formhashInput) {
         formhashInput.addEventListener('input', (e) => {
@@ -174,7 +213,7 @@ export function switchToSetupView(): void {
             paintStaticIcons(fetchBtn);
             GM.xmlHttpRequest({
                 method: 'GET',
-                url: 'https://bgm.tv/subject/1/edit_detail',
+                url: `${state.bgmBase}/subject/1/edit_detail`,
                 onload: (resp) => {
                     try {
                         const match = resp.responseText.match(/<input[^>]*name="formhash"[^>]*value="([^"]+)"/);
@@ -439,7 +478,7 @@ export function switchToProcessingErrorView(currentItem: CsvItem, errorMsg: stri
         coreContent.innerHTML = `
             <div>
                 <div class="item-info">
-                    当前${typeLabel}：<a href="https://bgm.tv/${state.entityType}/${itemId}" target="_blank">查看${typeLabel}</a>（${itemId}）
+                    当前${typeLabel}：<a href="${state.bgmBase}/${state.entityType}/${itemId}" target="_blank">查看${typeLabel}</a>（${itemId}）
                 </div>
                 <div class="status-box error">
                     无法获取${typeLabel}信息: ${errorMsg}
@@ -485,7 +524,7 @@ export function switchToUpdateErrorView(errorMsg: string): void {
         coreContent.innerHTML = `
             <div>
                 <div class="item-info">
-                    当前${typeLabel}：<a href="https://bgm.tv/${state.entityType}/${itemId}" target="_blank">${itemName}</a>（${itemId}）
+                    当前${typeLabel}：<a href="${state.bgmBase}/${state.entityType}/${itemId}" target="_blank">${itemName}</a>（${itemId}）
                 </div>
                 <div class="status-box error">
                     提交更新失败: ${errorMsg}
@@ -501,6 +540,19 @@ export function switchToUpdateErrorView(errorMsg: string): void {
             <button id="process-retry-update" class="primary" title="${RETRY_SHORTCUT_TITLE}" aria-label="重试，快捷键 ${IS_APPLE_PLATFORM ? 'Command 回车' : 'Ctrl 回车'}">重试<kbd class="kbd-hint" aria-hidden="true">${CONFIRM_SHORTCUT_HINT}</kbd></button>
         `;
     }
+}
+
+function bindBaseInput(id: string, fallback: string, set: (value: string) => void): void {
+    const input = document.getElementById(id) as HTMLInputElement | null;
+    if (!input) return;
+    input.addEventListener('input', () => {
+        set(normalizeBaseUrl(input.value) || fallback);
+    });
+    input.addEventListener('blur', () => {
+        const value = normalizeBaseUrl(input.value) || fallback;
+        set(value);
+        input.value = value;
+    });
 }
 
 export function switchToCompletedView(): void {

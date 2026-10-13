@@ -65,8 +65,8 @@
     --text: #dcdcdc;
     --text-secondary: #a6a6a6;
     --text-placeholder: #b0b0b0;
-    --border: #404040;
-    --border-light: #383838;
+    --border: #2a2a2b;
+    --border-light: #252526;
     --link: #2ea6ff;
     --link-hover: #02a3fb;
     --shadow-subtle: 0 0 0 2px rgb(255 255 255 / 4%);
@@ -377,6 +377,18 @@ morph-icon.spin svg {
 /* ===== Form Controls ===== */
 #bgm-tool-container .form-group {
     margin-bottom: 20px;
+}
+
+/* ===== Address Config ===== */
+.address-config {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 24px;
+}
+
+.address-config .form-group {
+    flex: 1 1 240px;
+    min-width: 0;
 }
 
 #bgm-tool-container label {
@@ -1266,16 +1278,14 @@ morph-icon.spin svg {
     color: var(--text);
 }
 
-.formhash-hint {
+.field-hint {
     font-size: 12px;
     color: var(--text-secondary);
-    margin-top: 4px;
-    padding: 10px 12px;
-    background: var(--bg-alt);
-    border-radius: 6px;
+    margin-top: 6px;
+    line-height: 1.6;
 }
 
-.formhash-hint code {
+.field-hint code {
     background: var(--white);
     padding: 1px 4px;
     border-radius: 3px;
@@ -1286,7 +1296,7 @@ morph-icon.spin svg {
     overflow-wrap: anywhere;
 }
 
-.formhash-hint a {
+.field-hint a {
     color: var(--link);
 }
 
@@ -1298,13 +1308,6 @@ morph-icon.spin svg {
     border-radius: 6px;
     font-size: 13px;
     color: var(--text);
-}
-
-.csv-hint {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin-top: 6px;
-    line-height: 1.6;
 }
 
 /* ===== Misc ===== */

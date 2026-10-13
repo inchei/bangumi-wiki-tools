@@ -1,3 +1,11 @@
+export const DEFAULT_API_BASE = 'https://next.bgm.tv';
+export const DEFAULT_BGM_BASE = 'https://bgm.tv';
+export const DEFAULT_SCRIPT_BASE = 'https://next.bgm.tv';
+
+export function normalizeBaseUrl(url: string): string {
+    return url.trim().replace(/\/+$/, '');
+}
+
 export interface CsvItem {
   id: string;
   tags?: string;
@@ -53,6 +61,9 @@ export interface State {
   accessToken: string;
   formhash: string;
   submitMethod: 'patch' | 'post';
+  apiBase: string;
+  bgmBase: string;
+  scriptBase: string;
   entityType: EntityType;
   csvData: CsvItem[] | null;
   csvPersistDenied: boolean;
@@ -82,6 +93,9 @@ export const state: State = {
     accessToken: GM_getValue('bgmAccessToken') || '',
     formhash: GM_getValue('bgmFormhash') || '',
     submitMethod: (GM_getValue('bgmSubmitMethod') as 'patch' | 'post') || 'patch',
+    apiBase: normalizeBaseUrl(GM_getValue('bgmApiBase') || '') || DEFAULT_API_BASE,
+    bgmBase: normalizeBaseUrl(GM_getValue('bgmBgmBase') || '') || DEFAULT_BGM_BASE,
+    scriptBase: normalizeBaseUrl(GM_getValue('bgmScriptBase') || '') || DEFAULT_SCRIPT_BASE,
     entityType: (localStorage.getItem('bgmEntityType') as EntityType) || 'subject',
     csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
     csvPersistDenied: false,
@@ -111,6 +125,9 @@ export function saveState(): void {
     GM_setValue('bgmAccessToken', state.accessToken);
     GM_setValue('bgmFormhash', state.formhash);
     GM_setValue('bgmSubmitMethod', state.submitMethod);
+    GM_setValue('bgmApiBase', state.apiBase);
+    GM_setValue('bgmBgmBase', state.bgmBase);
+    GM_setValue('bgmScriptBase', state.scriptBase);
     localStorage.setItem('bgmEntityType', state.entityType);
     persistCsvData();
     localStorage.setItem('bgmCurrentIndex', state.currentIndex.toString());
@@ -137,24 +154,26 @@ export function persistCsvData(): boolean {
 }
 
 export function getEntityApiConfig(type: EntityType, id: string): EntityConfig {
+    const apiBase = state.apiBase;
+    const bgmBase = state.bgmBase;
     const configs: Record<EntityType, EntityConfig> = {
         subject: {
-            wikiPath: `/p1/wiki/subjects/${id}`,
-            historyPath: `/p1/wiki/subjects/${id}/history-summary`,
+            wikiPath: `${apiBase}/p1/wiki/subjects/${id}`,
+            historyPath: `${apiBase}/p1/wiki/subjects/${id}/history-summary`,
             patchBodyKey: 'subject',
-            editPagePath: `https://bgm.tv/subject/${id}/edit`,
+            editPagePath: `${bgmBase}/subject/${id}/edit`,
         },
         character: {
-            wikiPath: `/p1/wiki/characters/${id}`,
-            historyPath: `/p1/wiki/characters/${id}/history-summary`,
+            wikiPath: `${apiBase}/p1/wiki/characters/${id}`,
+            historyPath: `${apiBase}/p1/wiki/characters/${id}/history-summary`,
             patchBodyKey: 'character',
-            editPagePath: `https://bgm.tv/character/${id}/edit`,
+            editPagePath: `${bgmBase}/character/${id}/edit`,
         },
         person: {
-            wikiPath: `/p1/wiki/persons/${id}`,
-            historyPath: `/p1/wiki/persons/${id}/history-summary`,
+            wikiPath: `${apiBase}/p1/wiki/persons/${id}`,
+            historyPath: `${apiBase}/p1/wiki/persons/${id}/history-summary`,
             patchBodyKey: 'person',
-            editPagePath: `https://bgm.tv/person/${id}/edit`,
+            editPagePath: `${bgmBase}/person/${id}/edit`,
         },
     };
     return configs[type] || configs.subject;

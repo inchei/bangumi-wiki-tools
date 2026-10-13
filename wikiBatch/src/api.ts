@@ -214,8 +214,8 @@ export function submitUpdate(
         });
 
         const postUrl = entityType === 'subject'
-            ? `https://bgm.tv/subject/${itemId}/new_revision`
-            : `https://bgm.tv/${entityType}/${itemId}/edit`;
+            ? `${state.bgmBase}/subject/${itemId}/new_revision`
+            : `${state.bgmBase}/${entityType}/${itemId}/edit`;
 
         GM.xmlHttpRequest({
             method: 'POST',

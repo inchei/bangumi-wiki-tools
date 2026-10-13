@@ -1,4 +1,4 @@
-import { state } from './core';
+import { state, normalizeBaseUrl, DEFAULT_SCRIPT_BASE } from './core';
 
 export const IS_APPLE_PLATFORM = /mac|iphone|ipad|ipod/i.test(
     (navigator as any).userAgentData?.platform ||
@@ -15,6 +15,39 @@ export const RETRY_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${CONFIRM
 export function sanitizeRegExp(str: string): string {
     const regexSpecialChars = /[.*+?^${}()|[\]\\]/g;
     return str.replace(regexSpecialChars, '\\$&');
+}
+
+export function escapeHtml(str: string): string {
+    const map: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    };
+    return str.replace(/[&<>"']/g, (ch) => map[ch]);
+}
+
+export function isScriptTarget(): boolean {
+    const target = normalizeBaseUrl(state.scriptBase) || DEFAULT_SCRIPT_BASE;
+    try {
+        if (location.origin === new URL(target).origin) return true;
+        return location.origin === new URL(DEFAULT_SCRIPT_BASE).origin;
+    } catch {
+        return true;
+    }
+}
+
+export function registerScriptMenuCommand(): void {
+    if (typeof GM_registerMenuCommand !== 'function') return;
+    GM_registerMenuCommand('设置脚本作用地址', () => {
+        const input = prompt('脚本作用地址（留空恢复默认）', state.scriptBase);
+        if (input === null) return;
+        const value = normalizeBaseUrl(input) || DEFAULT_SCRIPT_BASE;
+        state.scriptBase = value;
+        GM_setValue('bgmScriptBase', value);
+        alert(`脚本作用地址已设置为 ${value}，刷新页面后生效`);
+    });
 }
 
 export function arraysEqual<T>(a: T[], b: T[]): boolean {

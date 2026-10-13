@@ -8,7 +8,18 @@
 
 使用 Violentmonkey 等脚本管理器插件安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiBatch/dist/wikiBatch.user.js>
 
-脚本仅会在 <https://next.bgm.tv/> 域名下激活，可退出显示原页面，此时页面右下角会出现浮动按钮再次唤起。
+脚本默认仅在 <https://next.bgm.tv/> 域名下激活，可退出显示原页面，此时页面右下角会出现浮动按钮再次唤起。
+
+## 配置
+
+设置页面的「地址配置」可自定义两个基地址，配置保存在脚本管理器（GM）存储中，跨站点共享：
+
+| 配置项 | 默认值 | 说明 |
+| --- | --- | --- |
+| API 地址 | `https://next.bgm.tv` | Private API 基地址，用于读取/提交条目信息 |
+| Bangumi 地址 | `https://bgm.tv` | 站点基地址，用于提交更新与各类跳转链接 |
+
+脚本作用地址（默认 `https://next.bgm.tv`）在脚本管理器的脚本菜单中设置，修改后刷新页面生效。
 
 ## 开发
 

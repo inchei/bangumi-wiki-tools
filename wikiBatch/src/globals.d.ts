@@ -8,6 +8,8 @@ declare function GM_deleteValue(key: string): void;
 
 declare function GM_openInTab(url: string): void;
 
+declare function GM_registerMenuCommand(name: string, fn: () => void): void;
+
 declare namespace GM {
   function xmlHttpRequest(details: {
     method: string;

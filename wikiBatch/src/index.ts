@@ -1,6 +1,12 @@
 import { createStaticDOM } from './dom';
 import { initMorphIcons } from './morph';
-import './styles';
+import { injectStyles } from './styles';
+import { isScriptTarget, registerScriptMenuCommand } from './utils';
 
-initMorphIcons();
-createStaticDOM();
+registerScriptMenuCommand();
+
+if (isScriptTarget()) {
+    injectStyles();
+    initMorphIcons();
+    createStaticDOM();
+}
