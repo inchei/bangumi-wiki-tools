@@ -29,7 +29,7 @@ import {
 } from './diff';
 import { getDoc, setDiffContent, WCODE_CONTAINER_ID, TAGS_CONTAINER_ID } from './cm-diff';
 import { paintStaticIcons, setLockIcon } from './morph';
-import { isRecentUpdate, resetProcessingState, escapeHtml, CONFIRM_SHORTCUT_HINT, CONFIRM_SHORTCUT_TITLE, IS_APPLE_PLATFORM, SKIP_SHORTCUT_HINT, SKIP_SHORTCUT_TITLE, RETRY_SHORTCUT_TITLE } from './utils';
+import { isRecentUpdate, resetProcessingState, escapeHtml, CONFIRM_SHORTCUT_HINT, CONFIRM_SHORTCUT_TITLE, IS_APPLE_PLATFORM, SKIP_SHORTCUT_HINT, SKIP_SHORTCUT_TITLE, RETRY_SHORTCUT_TITLE, START_SHORTCUT_TITLE } from './utils';
 import { handleFileUpload, handlePasteCSV } from './csv';
 
 export function switchToSetupView(): void {
@@ -103,7 +103,7 @@ export function switchToSetupView(): void {
                                 tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
                                 series列使用true或false表示是否标记为系列<br>
                                 infobox列将整体替换Wiki文本（其余列仍按字段名逐项更新）<br>
-                                可使用 <a href="https://github.com/inchei/bangumi-wiki-tools/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）
+                                可使用 <a href="https://github.com/inchei/bangumi-wiki-tools/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）<br>
                                 可参考 <a href="https://inchei.github.io/bangumi-wiki-tools" target="_blank">每周自动生成任务</a>
                             </p>
                         </div>
@@ -168,7 +168,7 @@ export function switchToSetupView(): void {
 
     if (buttonsContainer) {
         buttonsContainer.innerHTML = `
-            <button id="setup-start-processing" class="primary">开始处理</button>
+            <button id="setup-start-processing" class="primary" title="${START_SHORTCUT_TITLE}" aria-label="开始处理，快捷键 ${IS_APPLE_PLATFORM ? 'Command 回车' : 'Ctrl 回车'}">开始处理<kbd class="kbd-hint" aria-hidden="true">${CONFIRM_SHORTCUT_HINT}</kbd></button>
         `;
     }
 

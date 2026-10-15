@@ -11,6 +11,7 @@ export const CONFIRM_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${CONFI
 export const SKIP_SHORTCUT_HINT = 'Shift↵';
 export const SKIP_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${SKIP_SHORTCUT_HINT} 直接跳过`;
 export const RETRY_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${CONFIRM_SHORTCUT_HINT} 直接重试`;
+export const START_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${CONFIRM_SHORTCUT_HINT} 直接开始处理`;
 
 export function sanitizeRegExp(str: string): string {
     const regexSpecialChars = /[.*+?^${}()|[\]\\]/g;

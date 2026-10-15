@@ -30,17 +30,26 @@ function handleProcessShortcut(e: KeyboardEvent): void {
     if (e.key !== 'Enter') return;
     if (e.isComposing || e.keyCode === 229) return;
     if (!e.ctrlKey && !e.metaKey && !e.shiftKey) return;
-    if (state.currentView !== 'processing') return;
+    const view = state.currentView;
+    if (view !== 'processing' && view !== 'setup') return;
     const container = document.getElementById(TOOL_ID);
     if (!container || container.style.display === 'none') return;
     const active = document.activeElement as HTMLElement | null;
     if (active && active !== document.body && !container.contains(active)) return;
-    const ids = (e.ctrlKey || e.metaKey)
-        ? ['process-confirm-update', 'process-retry-error', 'process-retry-update']
-        : ['process-skip-update', 'process-skip-error', 'process-skip-update-fail'];
-    const btn = document.querySelector(
-        ids.map((id) => `#static-buttons-container button#${id}`).join(','),
-    ) as HTMLButtonElement | null;
+    let btn: HTMLButtonElement | null;
+    if (view === 'setup') {
+        if (!e.ctrlKey && !e.metaKey) return;
+        btn = document.querySelector(
+            '#static-buttons-container button#setup-start-processing',
+        ) as HTMLButtonElement | null;
+    } else {
+        const ids = (e.ctrlKey || e.metaKey)
+            ? ['process-confirm-update', 'process-retry-error', 'process-retry-update']
+            : ['process-skip-update', 'process-skip-error', 'process-skip-update-fail'];
+        btn = document.querySelector(
+            ids.map((id) => `#static-buttons-container button#${id}`).join(','),
+        ) as HTMLButtonElement | null;
+    }
     if (!btn || btn.disabled) return;
     e.preventDefault();
     e.stopPropagation();
