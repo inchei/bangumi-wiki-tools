@@ -328,7 +328,7 @@
   }
 
   .yaml-editor:focus {
-    border-color: var(--accent);
+    border-color: var(--accent-strong);
     box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
   }
 

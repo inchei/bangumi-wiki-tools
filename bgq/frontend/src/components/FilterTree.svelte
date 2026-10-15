@@ -306,13 +306,13 @@
   }
 
   .op-btn:focus-within {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--accent-strong);
     outline-offset: 1px;
   }
 
   .op-btn.active {
-    background: var(--accent);
-    color: #fff;
+    background: var(--accent-strong);
+    color: var(--on-accent-strong);
   }
 
   .add-row {

@@ -14,6 +14,13 @@
 :root {
   --accent: #f09199;
   --accent-hover: #e07a85;
+
+  /* Bright accent in the logo sprite's rose family (3:1 on white — the WCAG
+     large-text / non-text UI minimum): used for accent text and as a fill
+     behind --on-accent-strong. */
+  --accent-strong: #e96e7a;
+  --accent-strong-hover: #d96671;
+  --on-accent-strong: #fff;
   --accent-light: #fef0f2;
   --accent-border: #fad4da;
   --link: #0084b4;
@@ -74,6 +81,9 @@ html[data-theme="dark"] {
 [data-theme="dark"] {
   --accent: #f09199;
   --accent-hover: #f5a3aa;
+  --accent-strong: #f09199;
+  --accent-strong-hover: #f5a3aa;
+  --on-accent-strong: #2d2e2f;
   --accent-light: rgb(240 145 153 / 12%);
   --accent-border: rgb(240 145 153 / 25%);
   --link: #2ea6ff;
@@ -122,7 +132,7 @@ a:hover {
 /* ===== Shared: tag-remove button ===== */
 .tag-remove {
   cursor: pointer;
-  color: var(--accent);
+  color: var(--accent-strong);
   font-size: 1.15rem;
   line-height: 1;
   flex-shrink: 0;
@@ -137,7 +147,7 @@ a:hover {
 }
 
 .tag-remove:hover {
-  color: var(--accent-hover);
+  color: var(--accent-strong-hover);
 }
 
 /* ===== Cards ===== */
@@ -215,7 +225,7 @@ a:hover {
 
 .input:focus,
 .select:focus {
-  border-color: var(--accent);
+  border-color: var(--accent-strong);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
 }
 
@@ -291,21 +301,21 @@ a:hover {
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: var(--white);
+  background: var(--accent-strong);
+  color: var(--on-accent-strong);
   display: flex;
   gap: 6px;
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: var(--accent-strong-hover);
   box-shadow: 0 2px 8px rgb(240 145 153 / 30%);
 }
 
 .btn-outline {
   background: var(--white);
-  color: var(--accent);
-  border: 1px solid var(--accent);
+  color: var(--accent-strong);
+  border: 1px solid var(--accent-strong);
 }
 
 .btn-outline:hover {
@@ -319,8 +329,8 @@ a:hover {
 }
 
 .btn-default:hover {
-  color: var(--accent);
-  border-color: var(--accent);
+  color: var(--accent-strong);
+  border-color: var(--accent-strong);
 }
 
 .btn-sm {
@@ -366,13 +376,13 @@ a:hover {
 }
 
 .radio-pill:hover {
-  border-color: var(--accent);
+  border-color: var(--accent-strong);
 }
 
 .radio-pill:focus-within {
   /* outline: auto is unreliable in Chromium (hidden input carries focus via
      clip-path; see Chromium#363097 family), so draw the ring ourselves. */
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-strong);
   outline-offset: 1px;
 }
 
@@ -397,15 +407,15 @@ a:hover {
 }
 
 .radio-pill.active {
-  background: var(--accent);
-  color: var(--white);
-  border-color: var(--accent);
+  background: var(--accent-strong);
+  color: var(--on-accent-strong);
+  border-color: var(--accent-strong);
 }
 
 /* ===== Condition Row ===== */
 .cond-type {
   font-size: 0.8rem;
-  color: var(--accent);
+  color: var(--accent-strong);
   font-weight: 600;
 }
 

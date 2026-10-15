@@ -1200,7 +1200,7 @@
      Tune via --uib-size / --uib-color / --uib-speed. */
   .bouncy {
     --uib-size: 45px;
-    --uib-color: var(--accent);
+    --uib-color: var(--accent-strong);
     --uib-speed: 1.75s;
 
     display: flex;
@@ -1491,8 +1491,8 @@
   }
 
   .scroll-arrow:hover {
-    color: var(--accent);
-    border-color: var(--accent);
+    color: var(--accent-strong);
+    border-color: var(--accent-strong);
   }
 
   .results-table {
@@ -1680,7 +1680,7 @@
 
   :global(.results-table .col-score) {
     font-weight: 600;
-    color: var(--accent);
+    color: var(--accent-strong);
   }
 
   :global(.results-table .col-name) {

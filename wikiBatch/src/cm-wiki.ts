@@ -60,13 +60,13 @@ const wikiLanguage = StreamLanguage.define<WikiState>({
 });
 
 const wikiStyle = HighlightStyle.define([
-    { tag: tags.keyword, color: 'var(--accent)', fontWeight: 'bold' },
+    { tag: tags.keyword, color: 'var(--accent-strong)', fontWeight: 'bold' },
     { tag: tags.invalid, color: '#f56c6c', textDecoration: 'underline wavy #f56c6c' },
     { tag: tags.propertyName, color: 'var(--link)' },
     { tag: tags.operator, color: 'var(--text-secondary)' },
     { tag: tags.string, color: 'var(--text)' },
     { tag: tags.variableName, color: 'var(--text)' },
-    { tag: tags.escape, color: 'var(--accent)' },
+    { tag: tags.escape, color: 'var(--accent-strong)' },
 ]);
 
 export const wikiHighlight = [

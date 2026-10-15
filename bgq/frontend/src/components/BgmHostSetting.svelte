@@ -54,7 +54,7 @@
   }
 
   .bgm-host-btn:hover {
-    color: var(--accent);
+    color: var(--accent-strong);
   }
 
   .bgm-host-btn :global(svg) {

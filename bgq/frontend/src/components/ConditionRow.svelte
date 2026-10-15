@@ -939,6 +939,6 @@
 
   :global(.input-ref) {
     background: var(--bg-alt);
-    border-color: var(--accent);
+    border-color: var(--accent-strong);
   }
 </style>

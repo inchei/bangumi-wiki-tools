@@ -35,7 +35,7 @@ function themeSpec(fontSize: string) {
         },
         '&.cm-focused': {
             outline: 'none',
-            borderColor: 'var(--accent)',
+            borderColor: 'var(--accent-strong)',
             boxShadow: '0 0 0 2px rgb(240 145 153 / 15%)',
         },
     };

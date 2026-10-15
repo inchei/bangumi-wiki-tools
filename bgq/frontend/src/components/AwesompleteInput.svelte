@@ -375,25 +375,25 @@
   }
 
   .aw-input :global(~ ul > li[aria-selected="true"]) {
-    background: var(--accent);
-    color: #fff;
+    background: var(--accent-strong);
+    color: var(--on-accent-strong);
   }
 
   .aw-input :global(~ ul > li:hover mark) {
     background: transparent;
-    color: var(--accent);
+    color: var(--accent-strong);
     font-weight: 600;
   }
 
   .aw-input :global(~ ul > li[aria-selected="true"] mark) {
     background: transparent;
-    color: #fff;
+    color: var(--on-accent-strong);
     font-weight: 600;
   }
 
   .aw-input :global(~ ul > li mark) {
     background: transparent;
-    color: var(--accent);
+    color: var(--accent-strong);
     font-weight: 600;
     padding: 0;
   }
