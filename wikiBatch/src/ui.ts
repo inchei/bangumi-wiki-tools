@@ -31,21 +31,3 @@ export function hideLoadingOverlay(): void {
     const overlay = document.getElementById('bgm-loading-overlay');
     if (overlay) overlay.classList.remove('active');
 }
-
-export function showStatusMessage(text: string): void {
-    const message = document.getElementById('bgm-status-message');
-    if (!message) return;
-    message.classList.remove('show');
-    void message.offsetWidth;
-    message.textContent = text;
-    message.classList.add('show');
-
-    setTimeout(() => {
-        message.classList.remove('show');
-    }, 3000);
-}
-
-export function hideStatusMessage(): void {
-    const message = document.getElementById('bgm-status-message');
-    if (message) message.classList.remove('show');
-}

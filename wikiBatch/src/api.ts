@@ -15,24 +15,23 @@ import {
     showLoadingOverlay,
     hideLoadingOverlay,
     updateProgressBar,
-    showStatusMessage,
 } from './ui';
 
 let fetchLock = false;
 
 export function startProcessing(): void {
     if (state.submitMethod === 'patch' && !state.accessToken) {
-        showStatusMessage('请输入Access Token');
+        alert('请输入Access Token');
         return;
     }
 
     if (state.submitMethod === 'post' && !state.formhash) {
-        showStatusMessage('请输入Formhash');
+        alert('请输入Formhash');
         return;
     }
 
     if (!state.csvData || state.csvData.length === 0) {
-        showStatusMessage('请上传有效的CSV文件');
+        alert('请上传有效的CSV文件');
         return;
     }
 

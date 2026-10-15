@@ -211,55 +211,6 @@ morph-icon.spin svg {
     transition: width 0.3s ease;
 }
 
-/* ===== Toast Message ===== */
-#bgm-status-message {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 12px 20px;
-    border-radius: 6px;
-    background: var(--text);
-    color: #fff;
-    font-size: 13px;
-    z-index: 10000;
-    box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
-    line-height: 1.5;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-
-#bgm-status-message.show {
-    opacity: 1;
-    visibility: visible;
-    animation: fade-in 0.3s forwards, fade-out 0.3s 2.7s forwards;
-}
-
-@keyframes fade-in {
-    from {
-        opacity: 0;
-        transform: translate(-50%, 20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-
-@keyframes fade-out {
-    from {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-
-    to {
-        opacity: 0;
-        transform: translate(-50%, 20px);
-    }
-}
-
 /* ===== Buttons ===== */
 
 /* Shared .btn classes, same definitions as bgq frontend */
@@ -1339,10 +1290,6 @@ morph-icon.spin svg {
 /* ===== Dark Mode Overrides ===== */
 #bgm-tool-container[data-theme="dark"] #bgm-loading-overlay {
     background: rgb(0 0 0 / 60%);
-}
-
-#bgm-tool-container[data-theme="dark"] #bgm-status-message {
-    background: #555;
 }
 
 #bgm-tool-container[data-theme="dark"] .status-box.success {

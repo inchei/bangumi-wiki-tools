@@ -1,6 +1,5 @@
 import { state, saveState, type ThemeMode } from './core';
 import { switchToSetupView } from './views';
-import { hideStatusMessage } from './ui';
 import {
     updateConfirmButtonState,
     generateCommitMessage,
@@ -263,7 +262,6 @@ export function createStaticDOM(): void {
                 <div id="loading-text"></div>
             </div>
         </div>
-        <div id="bgm-status-message"></div>
     `;
     document.body.appendChild(container);
     hidePageContent();
@@ -278,7 +276,6 @@ export function createStaticDOM(): void {
             restorePageContent();
             const fb = createFloatButton();
             fb.style.display = 'flex';
-            hideStatusMessage();
             saveState();
         });
     }

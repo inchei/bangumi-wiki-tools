@@ -13,7 +13,6 @@ import {
     hideProgressBar,
     showProgressBar,
     updateProgressBar,
-    showStatusMessage,
     hideLoadingOverlay,
 } from './ui';
 import {
@@ -281,14 +280,14 @@ export function switchToSetupView(): void {
             try {
                 const text = await navigator.clipboard.readText();
                 if (!text || !text.trim()) {
-                    showStatusMessage('剪贴板内容不是有效的CSV');
+                    alert('剪贴板内容不是有效的CSV');
                     return;
                 }
                 const nameEl = document.getElementById('setup-csv-file-name');
                 if (nameEl) nameEl.textContent = '已从剪贴板粘贴';
                 handlePasteCSV(text);
             } catch (err) {
-                showStatusMessage('读取剪贴板失败: ' + (err as Error).message);
+                alert('读取剪贴板失败: ' + (err as Error).message);
             }
         });
     }

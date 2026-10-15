@@ -1,7 +1,7 @@
 import { state, type PreviousItem } from './core';
 import { startProcessing, processNextItem, submitUpdate } from './api';
 import { checkForUpdates, generateCommitMessage } from './diff';
-import { showStatusMessage, showLoadingOverlay, hideLoadingOverlay } from './ui';
+import { showLoadingOverlay, hideLoadingOverlay } from './ui';
 import { switchToSetupView, switchToUpdateErrorView } from './views';
 import { resetProcessingState } from './utils';
 import { saveState } from './core';
@@ -101,8 +101,6 @@ export function handleProcessingViewButtons(btnId: string): void {
             const hasUpdates = checkForUpdates();
 
             if (!hasUpdates) {
-                showStatusMessage('没有检测到实质修改，已跳过更新');
-
                 state.previousItem = makePreviousItem();
                 state.currentIndex++;
                 resetProcessingState();
@@ -165,12 +163,9 @@ export function handleProcessingViewButtons(btnId: string): void {
             processNextItem();
             break;
 
-        case 'process-retry-error': {
-            const currentRetryCount = state.retryCount[itemId] || 0;
-            showStatusMessage(`正在重试（${currentRetryCount}次）...`);
+        case 'process-retry-error':
             processNextItem();
             break;
-        }
 
         case 'process-skip-update-fail':
             state.previousItem = makePreviousItem();
@@ -180,12 +175,9 @@ export function handleProcessingViewButtons(btnId: string): void {
             processNextItem();
             break;
 
-        case 'process-retry-update': {
-            const retryCurrentCount = state.retryCount[itemId] || 0;
-            showStatusMessage(`正在重试（${retryCurrentCount}次）...`);
+        case 'process-retry-update':
             processNextItem(true);
             break;
-        }
     }
 }
 

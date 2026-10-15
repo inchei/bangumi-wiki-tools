@@ -1,10 +1,10 @@
 import Papa from 'papaparse';
 import { state, persistCsvData, type CsvItem } from './core';
-import { showLoadingOverlay, hideLoadingOverlay, showStatusMessage } from './ui';
+import { showLoadingOverlay, hideLoadingOverlay } from './ui';
 import { switchToSetupView } from './views';
 
 
-function loadCSVContent(csvContent: string, sourceLabel: string): void {
+function loadCSVContent(csvContent: string): void {
     try {
         state.csvData = parseCSV(csvContent);
         state.currentIndex = 0;
@@ -14,9 +14,11 @@ function loadCSVContent(csvContent: string, sourceLabel: string): void {
         const persisted = persistCsvData();
         localStorage.setItem('bgmCurrentIndex', '0');
         switchToSetupView();
-        showStatusMessage(sourceLabel + '加载成功' + (persisted ? '' : '（内存模式：刷新页面后需重新加载）'));
+        if (!persisted) {
+            alert('CSV保存失败（可能超出浏览器本地存储容量），刷新页面后需重新加载');
+        }
     } catch (error: unknown) {
-        showStatusMessage('CSV解析错误: ' + (error as Error).message);
+        alert('CSV解析错误: ' + (error as Error).message);
         console.error(error);
     } finally {
         hideLoadingOverlay();
@@ -39,7 +41,7 @@ export function handleFileUpload(this: HTMLInputElement, e: Event): void {
     const reader = new FileReader();
     reader.onload = function (event: ProgressEvent<FileReader>) {
         const csvContent = (event.target as FileReader).result as string;
-        loadCSVContent(csvContent, 'CSV文件');
+        loadCSVContent(csvContent);
     };
     reader.readAsText(file);
 }
@@ -49,7 +51,7 @@ export function handlePasteCSV(csvContent: string): void {
         (btn as HTMLButtonElement).disabled = true;
     });
     showLoadingOverlay('正在解析粘贴的CSV...');
-    loadCSVContent(csvContent, '粘贴的CSV');
+    loadCSVContent(csvContent);
 }
 
 function parseCSV(csvContent: string): CsvItem[] {
