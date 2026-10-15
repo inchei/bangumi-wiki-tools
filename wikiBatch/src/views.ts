@@ -109,12 +109,13 @@ export function switchToSetupView(): void {
                         </div>
                         ${state.csvData ? `
                         <div class="form-group">
-                            <label>处理进度</label>
-                            <div class="progress-bar-container">
-                                <div class="progress-bar" style="width: ${(state.currentIndex / state.csvData.length) * 100}%"></div>
+                            <label for="setup-progress-range">处理进度</label>
+                            <div class="row-flex progress-edit-row">
+                                <input type="range" id="setup-progress-range" min="0" max="${state.csvData.length}" step="1" value="${state.currentIndex}">
+                                <input type="number" id="setup-progress-input" min="0" max="${state.csvData.length}" step="1" value="${state.currentIndex}">
+                                <span class="progress-total">/ ${state.csvData.length}</span>
+                                <button type="button" id="setup-progress-restore" class="secondary progress-restore-btn">上次进度</button>
                             </div>
-                            <div class="progress-info">上次进度: ${state.currentIndex}/${state.csvData.length}</div>
-                            <button id="setup-reset-progress" class="secondary setup-reset-btn">重置进度</button>
                         </div>
                         ` : ''}
                     </div>
@@ -290,6 +291,40 @@ export function switchToSetupView(): void {
                 showStatusMessage('读取剪贴板失败: ' + (err as Error).message);
             }
         });
+    }
+
+    const progressRange = document.getElementById('setup-progress-range') as HTMLInputElement | null;
+    const progressInput = document.getElementById('setup-progress-input') as HTMLInputElement | null;
+    const progressRestore = document.getElementById('setup-progress-restore') as HTMLButtonElement | null;
+    if (progressRange && progressInput && state.csvData) {
+        const max = state.csvData.length;
+        const remembered = state.currentIndex;
+        const applyValue = (value: number): number => {
+            const clamped = Math.min(Math.max(Number.isNaN(value) ? 0 : value, 0), max);
+            state.currentIndex = clamped;
+            localStorage.setItem('bgmCurrentIndex', clamped.toString());
+            if (progressRestore) progressRestore.disabled = clamped === remembered;
+            return clamped;
+        };
+        progressRange.addEventListener('input', () => {
+            progressInput.value = applyValue(parseInt(progressRange.value, 10)).toString();
+        });
+        progressInput.addEventListener('input', () => {
+            const raw = parseInt(progressInput.value, 10);
+            if (Number.isNaN(raw)) return;
+            progressRange.value = applyValue(raw).toString();
+        });
+        progressInput.addEventListener('change', () => {
+            const raw = parseInt(progressInput.value, 10);
+            progressInput.value = applyValue(Number.isNaN(raw) ? 0 : raw).toString();
+        });
+        if (progressRestore) {
+            progressRestore.disabled = true;
+            progressRestore.addEventListener('click', () => {
+                progressRange.value = applyValue(remembered).toString();
+                progressInput.value = remembered.toString();
+            });
+        }
     }
 
     const statusEl = document.getElementById('sync-status');

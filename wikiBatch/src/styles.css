@@ -408,7 +408,8 @@ morph-icon.spin svg {
 }
 
 #bgm-tool-container input[type="text"],
-#bgm-tool-container input[type="password"] {
+#bgm-tool-container input[type="password"],
+#bgm-tool-container input[type="number"] {
     width: 100%;
     height: 36px;
     padding: 0 12px;
@@ -421,8 +422,17 @@ morph-icon.spin svg {
     transition: var(--transition);
 }
 
+#bgm-tool-container input[type="range"] {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
 #bgm-tool-container input[type="text"]:focus,
-#bgm-tool-container input[type="password"]:focus {
+#bgm-tool-container input[type="password"]:focus,
+#bgm-tool-container input[type="number"]:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
     outline: none;
@@ -431,14 +441,16 @@ morph-icon.spin svg {
 /* 16px form text on touch phones (and iPhone landscape) to prevent iOS auto-zoom on focus */
 @media (pointer: coarse) and (width < 768px) {
     #bgm-tool-container input[type="text"],
-    #bgm-tool-container input[type="password"] {
+    #bgm-tool-container input[type="password"],
+    #bgm-tool-container input[type="number"] {
         font-size: 16px;
     }
 }
 
 @media (pointer: coarse) and (orientation: landscape) and (width < 1024px) {
     #bgm-tool-container input[type="text"],
-    #bgm-tool-container input[type="password"] {
+    #bgm-tool-container input[type="password"],
+    #bgm-tool-container input[type="number"] {
         font-size: 16px;
     }
 }
@@ -516,14 +528,22 @@ morph-icon.spin svg {
     transition: width 0.3s ease;
 }
 
-.progress-info {
+.progress-edit-row {
     margin-top: 8px;
+}
+
+#bgm-tool-container .progress-edit-row input[type="number"] {
+    width: 90px;
+    flex: 0 0 auto;
+}
+
+.progress-total {
     color: var(--text-secondary);
     font-size: 13px;
 }
 
-.setup-reset-btn {
-    margin-top: 10px;
+#bgm-tool-container button.progress-restore-btn {
+    padding: 0 12px;
 }
 
 /* ===== Diff Containers ===== */

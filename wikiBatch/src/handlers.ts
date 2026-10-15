@@ -13,13 +13,6 @@ export function handleSetupViewButtons(btnId: string): void {
         case 'setup-start-processing':
             startProcessing();
             break;
-        case 'setup-reset-progress':
-            state.currentIndex = 0;
-            state.retryCount = {};
-            state.previousItem = null;
-            localStorage.setItem('bgmCurrentIndex', '0');
-            switchToSetupView();
-            break;
         case 'sync-auth-btn':
             handleSyncAuth();
             break;
