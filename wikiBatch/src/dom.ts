@@ -222,16 +222,10 @@ export function createStaticDOM(): void {
                         </div>
                     </div>
                     <div class="edit-rows">
-                        <div class="edit-row">
+                        <div class="edit-row" id="static-wcode-row">
                             <div class="edit-area" id="static-wcode-area">
                                 <label>Wcode</label>
                                 <div id="static-cm-diff"></div>
-                            </div>
-                            <div class="wcode-diff-col" style="display: none;">
-                                <div class="diff-section-label">Wcode 变更</div>
-                                <div class="diff-section wcode-diff-section">
-                                    <div id="static-content-diff-container" class="diff-container"></div>
-                                </div>
                             </div>
                         </div>
                         <div class="edit-row">
@@ -240,7 +234,7 @@ export function createStaticDOM(): void {
                                 <div id="static-tags-cm-diff"></div>
                             </div>
                         </div>
-                        <div class="edit-row" id="static-series-area">
+                        <div id="static-series-area">
                             <label class="toggle-switch">
                                 <input type="checkbox" id="static-series-checkbox">
                                 <span class="toggle-slider"></span>
@@ -248,8 +242,6 @@ export function createStaticDOM(): void {
                             <label for="static-series-checkbox">标记为系列</label>
                         </div>
                     </div>
-                    <div id="diff-error"></div>
-                    <div id="status-container" class="status-box"></div>
                 </div>
             </div>
             <div class="buttons-container" id="static-buttons-container"></div>

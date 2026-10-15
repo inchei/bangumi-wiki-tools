@@ -295,7 +295,6 @@ morph-icon.spin svg {
 }
 
 #bgm-tool-container button .kbd-hint {
-    margin-left: 8px;
     font: inherit;
     font-size: 12px;
     font-weight: normal;
@@ -323,6 +322,10 @@ morph-icon.spin svg {
 
 .row-flex > .grow {
     flex: 1;
+}
+
+.row-flex label {
+    margin-bottom: 0;
 }
 
 /* ===== Form Controls ===== */
@@ -424,6 +427,8 @@ morph-icon.spin svg {
 }
 
 .file-upload-name {
+    min-width: 0;
+    max-width: 100%;
     font-size: 13px;
     color: var(--text-secondary);
     overflow: hidden;
@@ -497,80 +502,13 @@ morph-icon.spin svg {
     padding: 0 12px;
 }
 
-/* ===== Diff Containers ===== */
-.diff-container {
-    overflow: hidden;
-}
-
-.diff-section {
-    margin: 0;
-    overflow: hidden;
-    background: var(--white);
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    box-shadow: var(--shadow-subtle);
-}
-
-.diff-section-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border-light);
-    color: var(--text);
-}
-
-.diff-section-label,
+/* ===== Field Labels ===== */
 .edit-area label,
-.tags-edit-area label,
 .commit-message-area label {
     display: block;
     margin-bottom: 4px;
     font-weight: 400;
     font-size: 13px;
-    color: var(--text);
-}
-
-/* ===== Diff Error ===== */
-#diff-error {
-    color: #a72e2e;
-    font-size: 14px;
-    margin-top: 8px;
-    display: none;
-}
-
-/* ===== Logs ===== */
-.log-container {
-    border: 1px solid var(--border-light);
-    border-radius: 10px;
-    margin: 15px 0;
-    max-height: calc(100% - 180px);
-    overflow-y: auto;
-    background: var(--white);
-}
-
-.log-entry {
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border-light);
-    font-size: 13px;
-}
-
-.log-entry:last-child {
-    border-bottom: none;
-}
-
-.log-success {
-    background: #f0f9eb;
-    color: #529b2e;
-}
-
-.log-error {
-    background: #fef0f0;
-    color: #f56c6c;
-}
-
-.log-info {
-    background: var(--white);
     color: var(--text);
 }
 
@@ -610,6 +548,8 @@ morph-icon.spin svg {
 }
 
 @media (width < 640px) {
+    #bgm-tool-body { padding: 16px; }
+
     .buttons-container { padding: 16px; }
 }
 
@@ -813,6 +753,9 @@ morph-icon.spin svg {
     gap: 16px;
     min-width: 0;
     min-height: 0;
+}
+
+#static-wcode-row {
     flex: 1;
 }
 
@@ -821,7 +764,7 @@ morph-icon.spin svg {
         flex-direction: row;
     }
 
-    .edit-row > * {
+    .edit-row > .edit-area {
         flex: 1;
         min-width: 0;
         overflow: auto;
@@ -837,31 +780,9 @@ morph-icon.spin svg {
     min-height: 0;
 }
 
-.edit-area textarea {
-    width: 100%;
-    flex: 1;
-    min-height: 100px;
-    padding: 12px;
-    box-sizing: border-box;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-family: var(--font-mono);
-    font-size: 13px;
-    line-height: 1.6;
-    resize: vertical;
-    background: var(--white);
-    color: var(--text);
-    transition: var(--transition);
-}
-
-.edit-area textarea:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
-    outline: none;
-}
-
 #static-cm-diff,
 #static-tags-cm-diff {
+    flex: 1;
     min-height: 120px;
 }
 
@@ -886,31 +807,6 @@ morph-icon.spin svg {
 .cm-merge-revert button {
     font-size: 20px !important;
     padding: 0 !important;
-}
-
-.tags-edit-area {
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.tags-edit-area input {
-    width: 100%;
-    height: 36px;
-    padding: 0 12px;
-    box-sizing: border-box;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 13px;
-    color: var(--text);
-    background: var(--white);
-    transition: var(--transition);
-}
-
-.tags-edit-area input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
-    outline: none;
 }
 
 #static-series-area {
@@ -1137,59 +1033,6 @@ morph-icon.spin svg {
     color: var(--accent);
 }
 
-/* ===== Log Filter ===== */
-.log-search-container {
-    margin-bottom: 15px;
-}
-
-#log-search {
-    padding: 0 12px;
-    height: 36px;
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    font-size: 13px;
-    color: var(--text);
-    background: var(--white);
-    transition: var(--transition);
-}
-
-#log-search:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
-    outline: none;
-}
-
-.log-filter {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 15px;
-    flex-wrap: wrap;
-}
-
-.filter-btn {
-    padding: 4px 10px;
-    font-size: 12px;
-    border-radius: 6px;
-    border: 1px solid var(--border);
-    background: var(--white);
-    color: var(--text);
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-.filter-btn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-
-.filter-btn.active {
-    background: var(--accent);
-    color: #fff;
-    border-color: var(--accent);
-}
-
 /* ===== Setup View ===== */
 .method-option-group {
     background: var(--bg-alt);
@@ -1281,12 +1124,6 @@ morph-icon.spin svg {
     color: var(--text);
 }
 
-/* ===== Misc ===== */
-#status-container {
-    margin: 12px 0;
-    display: none;
-}
-
 /* ===== Dark Mode Overrides ===== */
 #bgm-tool-container[data-theme="dark"] #bgm-loading-overlay {
     background: rgb(0 0 0 / 60%);
@@ -1306,20 +1143,6 @@ morph-icon.spin svg {
 #bgm-tool-container[data-theme="dark"] .status-box.warning {
     background: rgb(230 162 60 / 10%);
     border-color: rgb(230 162 60 / 20%);
-}
-
-#bgm-tool-container[data-theme="dark"] .log-success {
-    background: rgb(103 194 58 / 10%);
-    color: #85ce61;
-}
-
-#bgm-tool-container[data-theme="dark"] .log-error {
-    background: rgb(245 108 108 / 10%);
-}
-
-#bgm-tool-container[data-theme="dark"] .log-info {
-    background: var(--white);
-    color: var(--text);
 }
 
 #bgm-tool-container[data-theme="dark"] button.danger {
