@@ -37,7 +37,7 @@ export interface WikiData {
   infobox?: string;
   metaTags?: string[];
   series?: boolean;
-  platform?: string;
+  platform?: string | number;
   summary?: string;
   profession?: Record<string, boolean>;
 }

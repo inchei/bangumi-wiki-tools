@@ -181,7 +181,7 @@ export function submitUpdate(
 
         if (entityType === 'subject') {
             formData.append('subject_title', state.currentSubjectData?.name || '');
-            formData.append('platform', state.currentSubjectData?.platform || '');
+            formData.append('platform', String(state.currentSubjectData?.platform ?? ''));
             formData.append('subject_infobox', formattedInfobox);
             formData.append('subject_summary', state.currentSubjectData?.summary || '');
             formData.append('subject_meta_tags', newTags.join(' '));
