@@ -1,6 +1,10 @@
 import { writable, get } from "svelte/store";
 
 import { platformsByType } from "./schema-data.js";
+import {
+  INFOBOX_FIELDS_PERSON,
+  INFOBOX_FIELDS_CHARACTER,
+} from "./infobox-fields.js";
 
 // Subject direct fields for autocomplete
 const SUBJECT_DIRECT_FIELDS = [
@@ -477,30 +481,28 @@ export const EPISODE_FIELD_CONFIGS = {
 };
 
 const PERSON_FIELDS = [
-  "name",
-  "id",
-  "type",
-  "career",
-  "summary",
-  "collects",
-  "comments",
-  "简体中文名",
-  "别名",
-  "性别",
-  "生日",
+  ...new Set([
+    "name",
+    "id",
+    "type",
+    "career",
+    "summary",
+    "collects",
+    "comments",
+    ...INFOBOX_FIELDS_PERSON,
+  ]),
 ];
 
 const CHARACTER_FIELDS = [
-  "name",
-  "id",
-  "role",
-  "summary",
-  "comments",
-  "collects",
-  "简体中文名",
-  "别名",
-  "性别",
-  "生日",
+  ...new Set([
+    "name",
+    "id",
+    "role",
+    "summary",
+    "comments",
+    "collects",
+    ...INFOBOX_FIELDS_CHARACTER,
+  ]),
 ];
 
 const SUBJECT_FIELD_CONFIGS = {

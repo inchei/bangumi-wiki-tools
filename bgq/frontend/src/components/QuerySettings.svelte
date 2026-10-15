@@ -44,6 +44,7 @@
     prioritize,
     detectSubjectTypeCode,
     prioritizedPositions,
+    subjectFieldsForType,
     ENTITY_FIELDS,
     ENTITY_LABELS,
     DEFAULT_ROW_FIELDS,
@@ -134,10 +135,15 @@
     target === "subject" ? detectSubjectTypeCode(rootItems) : 0,
   );
   let staffPositions = $derived(prioritizedPositions(subjectType));
+  let baseColumns = $derived(
+    target === "subject"
+      ? subjectFieldsForType(subjectType)
+      : TARGET_COLUMNS_BASE[target] || TARGET_COLUMNS_BASE.subject,
+  );
   let plainColumns = $derived([
     ...new Set([
       ...filterNames,
-      ...(TARGET_COLUMNS_BASE[target] || TARGET_COLUMNS_BASE.subject),
+      ...baseColumns,
       ...(target === "subject" || target === "person" ? staffPositions : []),
       ...(TARGET_COLUMNS_TAIL[target] || []),
     ]),
@@ -295,7 +301,11 @@
   });
 
   function rowFieldSuggestions(row, kind) {
-    const base = ENTITY_FIELDS[kind === "subject" ? "subject" : row.entity];
+    const entity = kind === "subject" ? "subject" : row.entity;
+    const base =
+      entity === "subject"
+        ? subjectFieldsForType(subjectType)
+        : ENTITY_FIELDS[entity];
     const extra = filterAssocFieldMap.get(row.prefix);
     const names = kind === "subject" ? extra?.subjectFields : extra?.fields;
     if (!names || names.length === 0) return base;

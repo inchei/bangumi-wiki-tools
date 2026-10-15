@@ -22,6 +22,7 @@ import {
   CHARACTER_RELATIONS,
   CHARACTER_ASSOC_TYPES,
 } from "./schema-data.js";
+import { infoboxFieldsByType } from "./infobox-fields.js";
 import {
   ctxFields,
   CTX_SUBJECT,
@@ -30,11 +31,17 @@ import {
   CTX_EPISODE,
 } from "./stores.js";
 
+export function subjectFieldsForType(typeCode = 0) {
+  return [
+    ...new Set([...ctxFields(CTX_SUBJECT), ...infoboxFieldsByType(typeCode)]),
+  ];
+}
+
 // Curated per-entity field lists (direct fields + commonly used infobox keys,
 // matching the filter UI's notion of entity fields). Stage-3 suggestions use
 // these; free-form infobox fields remain allowed via manual input.
 export const ENTITY_FIELDS = {
-  subject: ctxFields(CTX_SUBJECT),
+  subject: subjectFieldsForType(0),
   person: ctxFields(CTX_PERSON),
   character: ctxFields(CTX_CHARACTER),
   episode: ctxFields(CTX_EPISODE),
@@ -357,6 +364,9 @@ export function makeOutputTokenLister(target, plainFields, typeCode = 0) {
   const infos = assocPrefixesForTarget(target, typeCode);
   const prefixMap = new Map(infos.map((i) => [i.prefix, i]));
   const stage1 = [...new Set([...plainFields, ...infos.map((i) => i.prefix)])];
+  const subjectFields = subjectFieldsForType(typeCode);
+  const fieldsFor = (entity) =>
+    entity === "subject" ? subjectFields : ENTITY_FIELDS[entity];
   return (token) => {
     const t = token.trim();
     if (!t.includes(".")) return stage1;
@@ -374,11 +384,11 @@ export function makeOutputTokenLister(target, plainFields, typeCode = 0) {
         .filter(Boolean);
       const existing = new Set(members);
       const out = [];
-      for (const f of ENTITY_FIELDS[info.entity]) {
+      for (const f of fieldsFor(info.entity)) {
         if (!existing.has(f)) out.push(f + "|");
       }
       if (info.dual) {
-        for (const f of ENTITY_FIELDS.subject) {
+        for (const f of subjectFields) {
           if (!existing.has("s." + f)) out.push("s." + f + "|");
         }
       }
@@ -403,14 +413,17 @@ export function makeOutputTokenLister(target, plainFields, typeCode = 0) {
 // a subject type, that type's relation/position prefixes sort first.
 export function sortColumnSuggestions(target, plainFields, typeCode = 0) {
   const out = [...plainFields];
+  const subjectFields = subjectFieldsForType(typeCode);
+  const fieldsFor = (entity) =>
+    entity === "subject" ? subjectFields : ENTITY_FIELDS[entity];
   for (const info of assocPrefixesForTarget(target, typeCode)) {
     out.push(`${info.prefix}.count`);
     if (info.dual) out.push(`${info.prefix}.s.count`);
-    for (const f of ENTITY_FIELDS[info.entity]) {
+    for (const f of fieldsFor(info.entity)) {
       out.push(`${info.prefix}.${f}`);
     }
     if (info.dual) {
-      for (const f of ENTITY_FIELDS.subject) {
+      for (const f of subjectFields) {
         out.push(`${info.prefix}.s.${f}`);
       }
     }
@@ -505,5 +518,5 @@ export function prioritizedMetaTags(typeCode) {
 }
 
 export function subjectFieldSuggestions(typeCode = 0) {
-  return [...ctxFields(CTX_SUBJECT), ...prioritizedPositions(typeCode)];
+  return [...subjectFieldsForType(typeCode), ...prioritizedPositions(typeCode)];
 }

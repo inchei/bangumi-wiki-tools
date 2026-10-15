@@ -30,7 +30,10 @@ Supports CLI YAML config and HTTP API.
 
 **Infobox fields** (not direct columns — extracted via `regexp_extract(infobox, ...)`):
 Chinese field names like 出版社, 作者, 生日, 性别, 别名, 简体中文名 are infobox fields.
-Check `SUBJECT_FIELD_CONFIGS`, `PERSON_FIELD_CONFIGS`, `CHARACTER_FIELD_CONFIGS` in stores.js for available infobox fields and their operators.
+Available per-type infobox names are generated into `bgq/frontend/src/infobox-fields.js`
+(`INFOBOX_FIELDS_BY_TYPE` by subject type code, `INFOBOX_FIELDS_PERSON`/`INFOBOX_FIELDS_CHARACTER`
+from the shared `Crt` template) — from `bangumi/common/wiki_template.yml`.
+Check `SUBJECT_FIELD_CONFIGS`, `PERSON_FIELD_CONFIGS`, `CHARACTER_FIELD_CONFIGS` in stores.js for specialized operators.
 
 ## YAML Config Format
 
@@ -250,6 +253,7 @@ All valid values are in `bgq/frontend/src/schema-data.js`:
 - **Staff positions**: `ANIME_POSITIONS`, `BOOK_POSITIONS`, `GAME_POSITIONS`, `REAL_POSITIONS`
 - **Meta tags**: `META_TAGS_TYPE_1` (书籍), `META_TAGS_TYPE_2` (动画), `META_TAGS_TYPE_3` (音乐)
 - **Person/character relations**: `PERSON_RELATIONS`, `CHARACTER_RELATIONS`, `CHARACTER_ASSOC_TYPES`, `PERSON_CHAR_TYPES`
+- **Infobox field names**: `INFOBOX_FIELDS_BY_TYPE` (subject type → fields), `INFOBOX_FIELDS_PERSON`/`INFOBOX_FIELDS_CHARACTER`, `INFOBOX_FIELDS_ALL`
 
 Go source: `bgq/internal/model/` (relation_data.go, staff_data.go, metatags.go)
 
