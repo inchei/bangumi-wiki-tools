@@ -20,6 +20,7 @@ import {
     getFullInfobox,
     getTagUpdates,
     getSeriesUpdate,
+    isSeriesApplicable,
     updateInfobox,
     applyTagUpdates,
     generateCommitMessage,
@@ -100,7 +101,7 @@ export function switchToSetupView(): void {
                             <p class="field-hint">
                                 必备ID列，条目id，人物person_id，角色character_id<br>
                                 tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
-                                series列使用true或false表示是否标记为系列<br>
+                                series列使用true或false表示是否标记为系列（仅书籍条目）<br>
                                 infobox列将整体替换Wiki文本（其余列仍按字段名逐项更新）<br>
                                 可使用 <a href="https://github.com/inchei/bangumi-wiki-tools/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）<br>
                                 可参考 <a href="https://inchei.github.io/bangumi-wiki-tools" target="_blank">每周自动生成任务</a>
@@ -458,7 +459,7 @@ export function switchToProcessingView(itemData: {
     }
 
     const seriesArea = document.getElementById('static-series-area');
-    if (entityType === 'subject') {
+    if (isSeriesApplicable()) {
         const seriesCheckbox = document.getElementById('static-series-checkbox') as HTMLInputElement;
         const finalSeriesValue = seriesUpdate.hasUpdate ? seriesUpdate.newValue! : oldSeries;
         seriesCheckbox.checked = finalSeriesValue;

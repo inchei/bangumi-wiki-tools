@@ -1,6 +1,6 @@
 import { state, type PreviousItem } from './core';
 import { startProcessing, processNextItem, submitUpdate } from './api';
-import { checkForUpdates, generateCommitMessage } from './diff';
+import { checkForUpdates, generateCommitMessage, isSeriesApplicable } from './diff';
 import { showLoadingOverlay, hideLoadingOverlay } from './ui';
 import { switchToSetupView, switchToUpdateErrorView } from './views';
 import { resetProcessingState } from './utils';
@@ -91,9 +91,9 @@ export function handleProcessingViewButtons(btnId: string): void {
             const finalTags = entityType === 'subject'
                 ? getDoc(TAGS_CONTAINER_ID).split(' ').filter(t => t)
                 : [];
-            const finalSeries = entityType === 'subject'
+            const finalSeries = isSeriesApplicable()
                 ? (document.getElementById('static-series-checkbox') as HTMLInputElement).checked
-                : false;
+                : (subjectData?.series || false);
 
             const commitMessage = (document.getElementById('static-commit-input') as HTMLInputElement).value ||
                 generateCommitMessage(state.currentFieldUpdates, state.currentTagUpdates, state.currentSeriesUpdate, entityType);

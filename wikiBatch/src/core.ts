@@ -34,6 +34,7 @@ export interface SeriesUpdate {
 
 export interface WikiData {
   name?: string;
+  typeID?: number;
   infobox?: string;
   metaTags?: string[];
   series?: boolean;

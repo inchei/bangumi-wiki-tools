@@ -14,6 +14,15 @@ export function getCurrentEntityType(): EntityType {
     return state.entityType || 'subject';
 }
 
+const BOOK_TYPE_ID = 1;
+
+export function isSeriesApplicable(): boolean {
+    return (
+        getCurrentEntityType() === 'subject' &&
+        Number(state.currentSubjectData?.typeID) === BOOK_TYPE_ID
+    );
+}
+
 export function checkForUpdates(): boolean {
     if (!state.currentSubjectData) return false;
 
@@ -30,7 +39,7 @@ export function checkForUpdates(): boolean {
         const originalTags = state.currentSubjectData.metaTags || [];
         const originalSeries = state.currentSubjectData.series || false;
         const tagsChanged = !arraysEqual(currentTags, originalTags);
-        const seriesChanged = currentSeries !== originalSeries;
+        const seriesChanged = isSeriesApplicable() && currentSeries !== originalSeries;
         return wcodeChanged || tagsChanged || seriesChanged;
     }
 
@@ -127,7 +136,7 @@ export function getTagUpdates(csvItem: CsvItem, _oldTags: string[]): TagUpdates 
 }
 
 export function getSeriesUpdate(csvItem: CsvItem, oldSeries: boolean): SeriesUpdate {
-    if (state.entityType !== 'subject') {
+    if (!isSeriesApplicable()) {
         return { hasUpdate: false };
     }
 
