@@ -32,8 +32,7 @@ export function escapeHtml(str: string): string {
 export function isScriptTarget(): boolean {
     const target = normalizeBaseUrl(state.scriptBase) || DEFAULT_SCRIPT_BASE;
     try {
-        if (location.origin === new URL(target).origin) return true;
-        return location.origin === new URL(DEFAULT_SCRIPT_BASE).origin;
+        return location.origin === new URL(target).origin;
     } catch {
         return true;
     }
