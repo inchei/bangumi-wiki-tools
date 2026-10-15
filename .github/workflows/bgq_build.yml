@@ -2,10 +2,25 @@ name: build and release bgq
 
 on:
   push:
-    paths:
-      - 'bgq/**'
     branches:
       - main
+    paths:
+      - 'bgq/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - '!bgq/*.md'
+      - '!bgq/**/*.md'
+      - '!bgq/docs/**'
+      - '!bgq/skills/**'
+      - '!bgq/**/*_test.go'
+      - '!bgq/internal/query/testdata/**'
+      - '!bgq/cmd/gen-model/**'
+      - '!bgq/cmd/missing-persons/**'
+      - '!bgq/scripts/**'
+      - '!bgq/*.sh'
+      - '!bgq/.air.toml'
+      - '!bgq/Dockerfile'
+      - '!bgq/docker-compose.yml'
   workflow_dispatch:
   workflow_run:
     workflows: ["update common"]
@@ -17,6 +32,7 @@ permissions:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     strategy:
       matrix:
