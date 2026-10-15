@@ -1128,6 +1128,7 @@
                   {:else}
                     {@const val = row[bc.ci]}
                     {@const long = val && String(val).length > MAX_DISPLAY_LEN}
+                    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                     <div
                       class="results-td {cellClass(bc.label)}"
                       role={long ? "button" : "cell"}

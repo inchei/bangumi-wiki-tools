@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import Awesomplete from "awesomplete";
 
   /**
@@ -46,7 +46,7 @@
   let tabPressed = false;
   let isComposing = false;
   // eslint-disable-next-line svelte/prefer-writable-derived -- lastValidValue is also mutated in event handlers
-  let lastValidValue = $state(value);
+  let lastValidValue = $state(untrack(() => value));
   $effect(() => {
     lastValidValue = value;
   });
