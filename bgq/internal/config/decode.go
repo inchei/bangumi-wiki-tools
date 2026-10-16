@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -13,66 +12,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// UnmarshalJSON implements custom JSON unmarshaling for Filter.
+// UnmarshalJSON decodes a filter from the JSON sent by the HTTP API / Web UI.
+// JSON is a subset of YAML, so the payload is handed to the YAML decoder:
+// both entry points share one implementation (UnmarshalYAML) and cannot drift.
 func (f *Filter) UnmarshalJSON(data []byte) error {
-	// Use type-switching based on which key is present
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(data, &raw); err != nil {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(data, &doc); err != nil {
 		return err
 	}
-	for key, val := range raw {
-		switch key {
-		case "type":
-			f.Type = &TypeFilter{}
-			return json.Unmarshal(val, f.Type)
-		case "field":
-			f.Field = &FieldFilter{}
-			return json.Unmarshal(val, f.Field)
-		case "global":
-			f.Global = &GlobalFilter{}
-			return json.Unmarshal(val, f.Global)
-		case "tag":
-			f.Tag = &TagFilter{}
-			return json.Unmarshal(val, f.Tag)
-		case "meta_tag":
-			f.MetaTag = &TagFilter{}
-			return json.Unmarshal(val, f.MetaTag)
-		case "relation":
-			f.Relation = &RelationFilter{}
-			return json.Unmarshal(val, f.Relation)
-		case "person_relation":
-			f.PersonRelation = &PersonRelationFilter{}
-			return json.Unmarshal(val, f.PersonRelation)
-		case "character_relation":
-			f.CharacterRelation = &CharacterRelationFilter{}
-			return json.Unmarshal(val, f.CharacterRelation)
-		case "staff":
-			f.Staff = &StaffFilter{}
-			return json.Unmarshal(val, f.Staff)
-		case "character":
-			f.Character = &CharacterFilter{}
-			return json.Unmarshal(val, f.Character)
-		case "person_character":
-			f.PersonCharacter = &PersonCharacterFilter{}
-			return json.Unmarshal(val, f.PersonCharacter)
-		case "person_cast_subject":
-			f.PersonCastSubject = &PersonCastSubjectFilter{}
-			return json.Unmarshal(val, f.PersonCastSubject)
-		case "subject_cast":
-			f.SubjectCast = &SubjectCastFilter{}
-			return json.Unmarshal(val, f.SubjectCast)
-		case "character_person":
-			f.CharacterPerson = &CharacterPersonFilter{}
-			return json.Unmarshal(val, f.CharacterPerson)
-		case "episode":
-			f.Episode = &EpisodeFilter{}
-			return json.Unmarshal(val, f.Episode)
-		case "logic":
-			f.Logic = &LogicFilter{}
-			return json.Unmarshal(val, f.Logic)
-		}
+	if len(doc.Content) == 0 {
+		return nil
 	}
-	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, character_relation, staff, character, person_character, person_cast_subject, character_person, subject_cast, episode, logic")
+	return f.UnmarshalYAML(doc.Content[0])
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Filter.
@@ -209,7 +160,11 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				return err
 			}
 		default:
-			return fmt.Errorf("未知筛选键「%s」", key)
+			// The Web UI stores private bookkeeping keys (e.g. field._special)
+			// inside filter objects and its validator exempts "_"-prefixed keys.
+			if !strings.HasPrefix(key, "_") {
+				return fmt.Errorf("未知筛选键「%s」", key)
+			}
 		}
 	}
 	return nil
@@ -239,6 +194,8 @@ func strictYAMLKeysFor(t reflect.Type) map[string]struct{} {
 // propagate through custom UnmarshalYAML → node.Decode, so nested filter
 // values would otherwise silently drop unknown keys while the Web UI's YAML
 // editor rejects them (kind names the error like the frontend does).
+// "_"-prefixed keys are the Web UI's private bookkeeping fields and pass
+// through, matching the frontend validator.
 func decodeStrict(node *yaml.Node, kind string, target interface{}) error {
 	if node.Kind == yaml.MappingNode {
 		t := reflect.TypeOf(target)
@@ -249,6 +206,9 @@ func decodeStrict(node *yaml.Node, kind string, target interface{}) error {
 			allowed := strictYAMLKeysFor(t)
 			for i := 0; i < len(node.Content); i += 2 {
 				key := node.Content[i].Value
+				if strings.HasPrefix(key, "_") {
+					continue
+				}
 				if _, ok := allowed[key]; !ok {
 					return fmt.Errorf("%s 中未知键「%s」", kind, key)
 				}

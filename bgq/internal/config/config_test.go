@@ -1,8 +1,12 @@
 package config
 
 import (
+	"encoding/json"
+	"reflect"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestValidateFilterTreeLimits(t *testing.T) {
@@ -246,4 +250,84 @@ func TestValidateNestedFilters(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	})
+}
+
+func TestFilterJSONMatchesYAML(t *testing.T) {
+	pairs := []struct {
+		name string
+		yaml string
+		json string
+	}{
+		{"field", `field: { field: name, operator: contains, value: "x" }`, `{"field":{"field":"name","operator":"contains","value":"x"}}`},
+		{"type", `type: 2`, `{"type":2}`},
+		{"tag", `tag: { operator: contains, value: TV, negate: true }`, `{"tag":{"operator":"contains","value":"TV","negate":true}}`},
+		{"relation", `relation: { type: 系列, mode: any, conditions: [{ field: { field: name, operator: eq, value: y } }] }`,
+			`{"relation":{"type":"系列","mode":"any","conditions":[{"field":{"field":"name","operator":"eq","value":"y"}}]}}`},
+		{"episode", `episode: { mode: none, logic: { op: or, items: [{ field: { field: type, operator: eq, value: OP } }] } }`,
+			`{"episode":{"mode":"none","logic":{"op":"or","items":[{"field":{"field":"type","operator":"eq","value":"OP"}}]}}}`},
+		{"logic", `logic: { op: and, items: [{ tag: { operator: contains, value: TV } }] }`,
+			`{"logic":{"op":"and","items":[{"tag":{"operator":"contains","value":"TV"}}]}}`},
+	}
+
+	for _, p := range pairs {
+		t.Run(p.name, func(t *testing.T) {
+			var fromYAML, fromJSON Filter
+			if err := yaml.Unmarshal([]byte(p.yaml), &fromYAML); err != nil {
+				t.Fatalf("yaml: %v", err)
+			}
+			if err := json.Unmarshal([]byte(p.json), &fromJSON); err != nil {
+				t.Fatalf("json: %v", err)
+			}
+			if !reflect.DeepEqual(fromYAML, fromJSON) {
+				t.Fatalf("decoders disagree:\nyaml: %+v\njson: %+v", fromYAML, fromJSON)
+			}
+		})
+	}
+
+	invalid := []struct {
+		name string
+		yaml string
+		json string
+	}{
+		{"unknown item key", `typo: { value: 1 }`, `{"typo":{"value":1}}`},
+		{"unknown nested key", `field: { field: name, operator: contains, value: x, typo: 1 }`,
+			`{"field":{"field":"name","operator":"contains","value":"x","typo":1}}`},
+	}
+	for _, p := range invalid {
+		t.Run(p.name, func(t *testing.T) {
+			var fromYAML, fromJSON Filter
+			yamlErr := yaml.Unmarshal([]byte(p.yaml), &fromYAML)
+			jsonErr := json.Unmarshal([]byte(p.json), &fromJSON)
+			if yamlErr == nil || jsonErr == nil {
+				t.Fatalf("both decoders should reject: yaml=%v json=%v", yamlErr, jsonErr)
+			}
+			if yamlErr.Error() != jsonErr.Error() {
+				t.Fatalf("error mismatch: yaml=%q json=%q", yamlErr, jsonErr)
+			}
+		})
+	}
+}
+
+func TestFilterJSONMultiTypeRejectedByValidate(t *testing.T) {
+	var f Filter
+	body := `{"field":{"field":"name","operator":"contains","value":"x"},"tag":{"operator":"contains","value":"TV"}}`
+	if err := json.Unmarshal([]byte(body), &f); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	cfg := &Config{Filters: []Filter{f}}
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "每个条件只能指定一种过滤类型") {
+		t.Fatalf("expected multi-type rejection, got %v", err)
+	}
+}
+
+func TestFilterJSONToleratesPrivateKeys(t *testing.T) {
+	var f Filter
+	body := `{"field":{"field":"name","operator":"contains","value":"x","_special":true},"_id":7}`
+	if err := json.Unmarshal([]byte(body), &f); err != nil {
+		t.Fatalf("private keys should be tolerated, got %v", err)
+	}
+	if f.Field == nil || f.Field.Field != "name" {
+		t.Fatalf("field filter not decoded: %+v", f)
+	}
 }
