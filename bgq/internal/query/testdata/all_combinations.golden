@@ -952,6 +952,16 @@ SELECT s."id", s."name"
 FROM subjects s
 WHERE NOT EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
 LIMIT 10
+staff_with_subject_cast_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited'))
+SELECT s."id", s."name"
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons  WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (2, 1016, 4002)) AND EXISTS (SELECT 1 FROM subject_characters sc JOIN characters c ON c.character_id = sc.character_id JOIN person_characters pc ON pc.subject_id = sc.subject_id AND pc.character_id = sc.character_id JOIN persons p ON p.person_id = pc.person_id WHERE sc.subject_id = s.id AND sc.type = 1)
+LIMIT 10
 tag_negate	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s

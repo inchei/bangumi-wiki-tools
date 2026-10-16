@@ -280,6 +280,10 @@ func generateAllSQL() map[string]string {
 				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
 			}},
 		}}},
+		{"staff_with_subject_cast", []string{"subject"}, config.Filter{Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+			{Staff: &config.StaffFilter{Position: "导演", Mode: "any"}},
+			{SubjectCast: &config.SubjectCastFilter{Type: "主角", Mode: "any"}},
+		}}}},
 	}
 	for _, sf := range simpleFilters {
 		for _, target := range sf.targets {
