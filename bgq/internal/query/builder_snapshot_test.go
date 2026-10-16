@@ -488,6 +488,23 @@ func generateAllSQL() map[string]string {
 		}
 	}
 
+	// Default output columns (Output is nil) must resolve through the same field
+	// logic as explicit columns: person/character Chinese names live only in the
+	// infobox, so they must not be emitted as physical columns.
+	for _, target := range []string{"person", "character"} {
+		cfg := &config.Config{
+			DataDir: testDataDir(), Limit: 10, Target: target,
+			Filters: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+		}
+		sql, err := NewSQLBuilder(cfg, cfg.DataDir).Build()
+		name := "default_cols_" + target
+		if err != nil {
+			results[name] = "ERROR: " + err.Error()
+		} else {
+			results[name] = sql
+		}
+	}
+
 	return results
 }
 
@@ -728,6 +745,20 @@ func generateAllSQLDB() map[string]string {
 			results[sp.name] = "ERROR: " + err.Error()
 		} else {
 			results[sp.name] = sql
+		}
+	}
+
+	for _, target := range []string{"person", "character"} {
+		cfg := &config.Config{
+			Database: "test", Limit: 10, Target: target,
+			Filters: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+		}
+		sql, err := NewSQLBuilder(cfg, "").Build()
+		name := "default_cols_" + target
+		if err != nil {
+			results[name] = "ERROR: " + err.Error()
+		} else {
+			results[name] = sql
 		}
 	}
 

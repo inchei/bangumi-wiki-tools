@@ -78,11 +78,7 @@ func (b *SQLBuilder) buildSelect() []string {
 	tc := b.tc
 
 	if len(cols) == 0 {
-		result := make([]string, len(tc.defaultCols))
-		for i, c := range tc.defaultCols {
-			result[i] = a + "." + c
-		}
-		return result
+		cols = tc.defaultCols
 	}
 
 	var result []string

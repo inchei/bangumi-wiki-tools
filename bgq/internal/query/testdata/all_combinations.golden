@@ -315,6 +315,18 @@ SELECT s."id", s."name"
 FROM subjects s
 WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
 LIMIT 10
+default_cols_character	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT c."character_id", c."name", regexp_extract(c.infobox, '(?i)\|简体中文名\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1) AS "简体中文名"
+FROM characters c
+WHERE CAST(c."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+LIMIT 10
+default_cols_person	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT p."person_id", p."name", regexp_extract(p.infobox, '(?i)\|简体中文名\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1) AS "简体中文名"
+FROM persons p
+WHERE CAST(p."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+LIMIT 10
 episode_all_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
