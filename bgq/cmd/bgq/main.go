@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/inchei/bangumi-query/internal/archive"
 	"github.com/inchei/bangumi-query/internal/config"
 	"github.com/inchei/bangumi-query/internal/query"
 )
@@ -299,51 +300,9 @@ func resolveDataDir(dataDir, configFile string) string {
 	return dataDir
 }
 
-func runIngest(dataDir, dbPath string) error {
-	// Tables are created with CREATE TABLE IF NOT EXISTS, so importing into an
-	// existing database would silently keep the old data.
-	if _, err := os.Stat(dbPath); err == nil {
-		return fmt.Errorf("数据库已存在: %s", dbPath)
-	}
-
-	// Create DuckDB database and import JSONLines files
-	ctx := context.Background()
-
-	sql := fmt.Sprintf(`
--- Create tables from JSONLines files
-CREATE TABLE IF NOT EXISTS subjects AS
-  SELECT * FROM read_json_auto('%s/subject.jsonlines', format='newline_delimited');
-
-CREATE TABLE IF NOT EXISTS persons AS
-  SELECT id AS person_id, type AS person_type, * EXCLUDE (id, type) FROM read_json_auto('%s/person.jsonlines', format='newline_delimited');
-
-CREATE TABLE IF NOT EXISTS characters AS
-  SELECT id AS character_id, * EXCLUDE (id) FROM read_json_auto('%s/character.jsonlines', format='newline_delimited');
-
-CREATE TABLE IF NOT EXISTS subject_relations AS
-  SELECT * FROM read_json_auto('%s/subject-relations.jsonlines', format='newline_delimited');
-
-CREATE TABLE IF NOT EXISTS subject_persons AS
-  SELECT * FROM read_json_auto('%s/subject-persons.jsonlines', format='newline_delimited');
-
-CREATE TABLE IF NOT EXISTS subject_characters AS
-  SELECT * FROM read_json_auto('%s/subject-characters.jsonlines', format='newline_delimited');
-
-CREATE TABLE IF NOT EXISTS episodes AS
-  SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('%s/episode.jsonlines', format='newline_delimited');
-
-CREATE TABLE IF NOT EXISTS person_relations AS
-  SELECT * FROM read_json_auto('%s/person-relations.jsonlines', format='newline_delimited')
-  WHERE person_type = 'prsn';
-
-CREATE TABLE IF NOT EXISTS character_relations AS
-  SELECT * FROM read_json_auto('%s/person-relations.jsonlines', format='newline_delimited')
-  WHERE person_type = 'crt';
-
-CREATE TABLE IF NOT EXISTS person_characters AS
-  SELECT * FROM read_json_auto('%s/person-characters.jsonlines', format='newline_delimited');
-
--- Create indexes
+// ingestIndexes are created after the tables; they exist to speed up db-mode
+// queries and are not part of the shared archive schema.
+const ingestIndexes = `
 CREATE INDEX IF NOT EXISTS idx_subjects_type ON subjects(type);
 CREATE INDEX IF NOT EXISTS idx_relations_subject ON subject_relations(subject_id);
 CREATE INDEX IF NOT EXISTS idx_relations_type ON subject_relations(relation_type);
@@ -356,7 +315,24 @@ CREATE INDEX IF NOT EXISTS idx_person_relations_type ON person_relations(relatio
 CREATE INDEX IF NOT EXISTS idx_person_characters_person ON person_characters(person_id);
 CREATE INDEX IF NOT EXISTS idx_person_characters_character ON person_characters(character_id);
 CREATE INDEX IF NOT EXISTS idx_person_characters_subject ON person_characters(subject_id);
-`, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir)
+`
 
-	return query.ExecuteDuckDBSQL(ctx, dbPath, sql)
+func runIngest(dataDir, dbPath string) error {
+	// Tables are created with CREATE TABLE IF NOT EXISTS, so importing into an
+	// existing database would silently keep the old data.
+	if _, err := os.Stat(dbPath); err == nil {
+		return fmt.Errorf("数据库已存在: %s", dbPath)
+	}
+
+	ctx := context.Background()
+
+	var sql strings.Builder
+	sql.WriteString("-- Create tables from JSONLines files\n")
+	for _, t := range archive.AllTables {
+		fmt.Fprintf(&sql, "CREATE TABLE IF NOT EXISTS %s AS\n  %s;\n\n",
+			t.Name, t.Source(query.EscapeLiteral(dataDir)))
+	}
+	sql.WriteString(ingestIndexes)
+
+	return query.ExecuteDuckDBSQL(ctx, dbPath, sql.String())
 }
