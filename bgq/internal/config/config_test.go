@@ -72,6 +72,52 @@ func TestValidateTarget(t *testing.T) {
 	}
 }
 
+func TestValidateEpisodeFilter(t *testing.T) {
+	episode := func(mode string, logic *LogicFilter) Filter {
+		return Filter{Episode: &EpisodeFilter{Mode: mode, Logic: logic}}
+	}
+	validLogic := &LogicFilter{Op: "and", Items: []Filter{
+		{Field: &FieldFilter{Field: "name", Operator: "contains", Value: "x"}},
+	}}
+
+	t.Run("subject target with logic is valid", func(t *testing.T) {
+		cfg := &Config{Target: "subject", Filters: []Filter{episode("any", validLogic)}}
+		if err := cfg.Validate(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("non-subject target is rejected", func(t *testing.T) {
+		for _, target := range []string{"person", "character", "episode"} {
+			cfg := &Config{Target: target, Filters: []Filter{episode("any", validLogic)}}
+			err := cfg.Validate()
+			if err == nil || !strings.Contains(err.Error(), "仅支持 target: subject") {
+				t.Fatalf("target %q: expected subject-only error, got %v", target, err)
+			}
+		}
+	})
+
+	t.Run("mode none is rejected", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{episode("none", validLogic)}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "不支持 mode: none") {
+			t.Fatalf("expected none rejection, got %v", err)
+		}
+	})
+
+	t.Run("missing logic is rejected", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{episode("any", nil)}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "需要提供 logic") {
+			t.Fatalf("expected logic-required error, got %v", err)
+		}
+		cfg = &Config{Filters: []Filter{episode("any", &LogicFilter{Op: "and"})}}
+		if err := cfg.Validate(); err == nil {
+			t.Fatalf("expected empty logic items to be rejected")
+		}
+	})
+}
+
 func TestValidateLimitUncapped(t *testing.T) {
 	// The 1..10000 window is a Web UI/API concern (frontend validation +
 	// server-side clamp); the CLI must stay uncapped for bulk exports.

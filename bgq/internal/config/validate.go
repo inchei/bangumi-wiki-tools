@@ -233,11 +233,27 @@ func (c *Config) Validate() error {
 				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
 		case f.Episode != nil:
+			// Episode data is joined via episodes.subject_id, which only the
+			// subject target exposes (the builder references s.id directly), so
+			// reject the combination up front instead of failing in DuckDB.
+			if c.Target != "" && c.Target != "subject" {
+				return fmt.Errorf("筛选条件 %d: episode 筛选仅支持 target: subject", i+1)
+			}
 			if f.Episode.Mode == "" {
 				f.Episode.Mode = "any"
 			}
 			if err := validateMode(f.Episode.Mode); err != nil {
 				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
+			// Episode filters implement any/all/count only; none would silently
+			// fall through to any in the builder.
+			if f.Episode.Mode == "none" {
+				return fmt.Errorf("筛选条件 %d: episode 筛选不支持 mode: none", i+1)
+			}
+			// Without a condition tree the builder cannot tell which episodes to
+			// match (a missing logic previously matched every subject).
+			if f.Episode.Logic == nil || len(f.Episode.Logic.Items) == 0 {
+				return fmt.Errorf("筛选条件 %d: episode 筛选需要提供 logic 条件", i+1)
 			}
 		case f.Logic != nil:
 			if f.Logic.Op != "and" && f.Logic.Op != "or" {
