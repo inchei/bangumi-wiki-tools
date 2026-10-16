@@ -3,7 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
 	"io"
 	"log"
 	"net/http"
@@ -20,12 +23,17 @@ import (
 // const bangumiCommonBase = "https://raw.githubusercontent.com/bangumi/common/master"
 const bangumiCommonBase = "https://ghfast.top/https://raw.githubusercontent.com/bangumi/common/master"
 
+// bangumiServerBase hosts the archive command whose record structs define the
+// columns of every jsonlines file in the archive release.
+const bangumiServerBase = "https://ghfast.top/https://raw.githubusercontent.com/bangumi/server/master"
+
 //go:generate cp -r templates ../../internal/model/templates
 
 func main() {
 	dataDir := "../bangumi_archive"
 	outDir := "internal/model"
 	noMetaTags := false
+	archiveOnly := false
 
 	for i := 1; i < len(os.Args); i++ {
 		switch os.Args[i] {
@@ -43,7 +51,22 @@ func main() {
 			// Skip archive-dependent outputs (metatags.go, schema-data.js
 			// meta tags) so the rest can regenerate without a local archive.
 			noMetaTags = true
+		case "--archive-only":
+			// Only regenerate internal/archive from the upstream schema.
+			archiveOnly = true
 		}
+	}
+
+	if archiveOnly {
+		fmt.Println("Generating archive schema...")
+		fmt.Println("  Downloading from bangumi/server...")
+		generateArchiveTables(
+			downloadFile(bangumiServerBase+"/cmd/archive/main.go"),
+			findArchiveDir(),
+			findTemplatesDir(),
+		)
+		fmt.Println("Done!")
+		return
 	}
 
 	if outDir == "internal/model" {
@@ -58,6 +81,7 @@ func main() {
 	fmt.Println("Generating model data...")
 	fmt.Println("  Downloading from bangumi/common...")
 
+	archiveSrc := downloadFile(bangumiServerBase + "/cmd/archive/main.go")
 	platformsYAML := downloadFile(bangumiCommonBase + "/subject_platforms.yml")
 	subjectRelationsYAML := downloadFile(bangumiCommonBase + "/subject_relations.yml")
 	personRelationsYAML := downloadFile(bangumiCommonBase + "/person_relations.yml")
@@ -81,6 +105,9 @@ func main() {
 
 	fmt.Println("  Generating platform.go...")
 	generatePlatform(platformsYAML, outDir, tmplDir)
+
+	fmt.Println("  Generating internal/archive tables...")
+	generateArchiveTables(archiveSrc, findArchiveDir(), tmplDir)
 
 	fmt.Println("  Generating relation_data.go...")
 	generateRelationData(subjectRelationsYAML, personRelationsYAML, outDir, tmplDir)
@@ -120,6 +147,149 @@ func main() {
 	}
 
 	fmt.Println("Done!")
+}
+
+// findArchiveDir locates internal/archive/ so the generator can write
+// tables_gen.go next to the hand-written archive.go.
+func findArchiveDir() string {
+	for _, p := range []string{"../archive", "internal/archive", "../../internal/archive"} {
+		if st, err := os.Stat(p); err == nil && st.IsDir() {
+			return p
+		}
+	}
+	fmt.Fprintf(os.Stderr, "Cannot find internal/archive directory\n")
+	os.Exit(1)
+	return ""
+}
+
+// archiveTableSpec maps an upstream record struct to a bgq table.
+type archiveTableSpec struct {
+	Var      string            // generated variable name
+	Struct   string            // struct in bangumi/server cmd/archive
+	Name     string            // table / CTE name
+	File     string            // jsonlines file name
+	Where    string            // optional row filter
+	Renames  map[string]string // column -> alias
+	Coalesce map[string]bool   // columns wrapped in COALESCE(x,'')
+}
+
+func archiveTableSpecs() []archiveTableSpec {
+	return []archiveTableSpec{
+		{Var: "Subjects", Struct: "Subject", Name: "subjects", File: "subject.jsonlines"},
+		{Var: "Persons", Struct: "Person", Name: "persons", File: "person.jsonlines",
+			Renames:  map[string]string{"id": "person_id", "type": "person_type"},
+			Coalesce: map[string]bool{"infobox": true}},
+		{Var: "Characters", Struct: "Character", Name: "characters", File: "character.jsonlines",
+			Renames:  map[string]string{"id": "character_id"},
+			Coalesce: map[string]bool{"infobox": true}},
+		{Var: "SubjectRelations", Struct: "SubjectRelation", Name: "subject_relations", File: "subject-relations.jsonlines"},
+		{Var: "SubjectPersons", Struct: "SubjectPerson", Name: "subject_persons", File: "subject-persons.jsonlines"},
+		{Var: "SubjectCharacters", Struct: "SubjectCharacter", Name: "subject_characters", File: "subject-characters.jsonlines"},
+		{Var: "Episodes", Struct: "Episode", Name: "episodes", File: "episode.jsonlines",
+			Renames: map[string]string{"id": "episode_id"}},
+		{Var: "PersonRelations", Struct: "PersonRelation", Name: "person_relations", File: "person-relations.jsonlines",
+			Where: "person_type = 'prsn'"},
+		{Var: "CharacterRelations", Struct: "PersonRelation", Name: "character_relations", File: "person-relations.jsonlines",
+			Where: "person_type = 'crt'"},
+		{Var: "PersonCharacters", Struct: "PersonCharacter", Name: "person_characters", File: "person-characters.jsonlines"},
+	}
+}
+
+// parseArchiveRecordFields returns the json field names of an upstream record
+// struct, in declaration order. Parsing (not type-checking) the downloaded
+// source keeps this independent of the upstream module's dependencies.
+func parseArchiveRecordFields(src []byte, structName string) []string {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "archive_main.go", src, parser.SkipObjectResolution)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse bangumi/server archive command: %v\n", err)
+		os.Exit(1)
+	}
+	for _, decl := range file.Decls {
+		gen, ok := decl.(*ast.GenDecl)
+		if !ok || gen.Tok != token.TYPE {
+			continue
+		}
+		for _, spec := range gen.Specs {
+			ts, ok := spec.(*ast.TypeSpec)
+			if !ok || ts.Name.Name != structName {
+				continue
+			}
+			st, ok := ts.Type.(*ast.StructType)
+			if !ok {
+				fmt.Fprintf(os.Stderr, "%s is not a struct\n", structName)
+				os.Exit(1)
+			}
+			var fields []string
+			for _, field := range st.Fields.List {
+				if len(field.Names) == 0 || field.Tag == nil {
+					continue
+				}
+				m := jsonTagRe.FindStringSubmatch(field.Tag.Value)
+				if m == nil || m[1] == "-" {
+					continue
+				}
+				fields = append(fields, m[1])
+			}
+			if len(fields) == 0 {
+				fmt.Fprintf(os.Stderr, "%s has no json-tagged fields\n", structName)
+				os.Exit(1)
+			}
+			return fields
+		}
+	}
+	fmt.Fprintf(os.Stderr, "Struct %s not found in bangumi/server archive command\n", structName)
+	os.Exit(1)
+	return nil
+}
+
+var jsonTagRe = regexp.MustCompile(`json:"([^",]+)"`)
+
+func archiveSelect(fields []string, spec archiveTableSpec) string {
+	parts := make([]string, 0, len(fields))
+	for _, name := range fields {
+		col := quoteIdent(name)
+		switch {
+		case spec.Renames[name] != "":
+			parts = append(parts, col+" as "+spec.Renames[name])
+		case spec.Coalesce[name]:
+			parts = append(parts, "COALESCE("+col+",'') as "+name)
+		default:
+			parts = append(parts, col)
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
+// quoteIdent quotes an archive column so reserved words (e.g. `order`) stay
+// usable and future ones cannot break the generated schema.
+func quoteIdent(name string) string {
+	return `"` + name + `"`
+}
+
+func generateArchiveTables(src []byte, archiveDir, tmplDir string) {
+	type tableData struct {
+		Var, Name, File, Select, Where string
+	}
+
+	var tables []tableData
+	for _, spec := range archiveTableSpecs() {
+		fields := parseArchiveRecordFields(src, spec.Struct)
+		tables = append(tables, tableData{
+			Var:    spec.Var,
+			Name:   spec.Name,
+			File:   spec.File,
+			Select: archiveSelect(fields, spec),
+			Where:  spec.Where,
+		})
+	}
+
+	tmpl := loadTemplate(tmplDir, "archive_tables.go.tmpl")
+	var sb strings.Builder
+	if err := tmpl.Execute(&sb, struct{ Tables []tableData }{tables}); err != nil {
+		log.Fatal(err)
+	}
+	writeToFile(filepath.Join(archiveDir, "tables_gen.go"), sb.String())
 }
 
 func findTemplatesDir() string {
