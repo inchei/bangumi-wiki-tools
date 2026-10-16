@@ -151,3 +151,99 @@ func TestParseYAMLKnownFields(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateNestedFilters(t *testing.T) {
+	logic := func(items ...Filter) Filter {
+		return Filter{Logic: &LogicFilter{Op: "and", Items: items}}
+	}
+	field := func(op string) Filter {
+		return Filter{Field: &FieldFilter{Field: "name", Operator: op, Value: "x"}}
+	}
+	episode := &EpisodeFilter{Mode: "any", Logic: &LogicFilter{Op: "and", Items: []Filter{field("contains")}}}
+	staff := func(mode string) Filter {
+		return Filter{Staff: &StaffFilter{Position: "导演", Mode: mode, Conditions: []Filter{field("contains")}}}
+	}
+
+	t.Run("wrong target for episode", func(t *testing.T) {
+		cfg := &Config{Target: "person", Filters: []Filter{logic(Filter{Episode: episode})}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "episode 筛选仅支持 target: subject") {
+			t.Fatalf("expected nested target error, got %v", err)
+		}
+	})
+
+	t.Run("bad mode", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(staff("bogus_mode"))}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "mode「bogus_mode」不存在") {
+			t.Fatalf("expected nested mode error, got %v", err)
+		}
+	})
+
+	t.Run("deep nesting is validated", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(logic(staff("bogus_mode")))}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "mode「bogus_mode」不存在") {
+			t.Fatalf("expected deep path error, got %v", err)
+		}
+	})
+
+	t.Run("episode without logic", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(Filter{Episode: &EpisodeFilter{Mode: "any"}})}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "episode 筛选需要提供 logic 条件") {
+			t.Fatalf("expected nested logic error, got %v", err)
+		}
+	})
+
+	t.Run("bad logic op", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(Filter{Logic: &LogicFilter{Op: "xor", Items: []Filter{field("contains")}}})}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "logic op 必须为 and 或 or") {
+			t.Fatalf("expected nested op error, got %v", err)
+		}
+	})
+
+	t.Run("bad operator", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(field("bogus_op"))}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "operator「bogus_op」不存在") {
+			t.Fatalf("expected nested operator error, got %v", err)
+		}
+	})
+
+	t.Run("empty nested filter", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(Filter{})}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "至少需要指定一个过滤类型") {
+			t.Fatalf("expected nested empty-filter error, got %v", err)
+		}
+	})
+
+	t.Run("labeled subject conditions", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(Filter{PersonCharacter: &PersonCharacterFilter{
+			Mode:              "any",
+			Conditions:        []Filter{field("contains")},
+			SubjectConditions: []Filter{field("bogus_op")},
+		}})}}
+		err := cfg.Validate()
+		if err == nil || !strings.Contains(err.Error(), "operator「bogus_op」不存在") {
+			t.Fatalf("expected labeled path error, got %v", err)
+		}
+	})
+
+	t.Run("valid nested filters still pass", func(t *testing.T) {
+		cfg := &Config{Filters: []Filter{logic(
+			staff("any"),
+			logic(Filter{Episode: episode}),
+			Filter{PersonCharacter: &PersonCharacterFilter{
+				Mode:              "any",
+				Conditions:        []Filter{field("contains")},
+				SubjectConditions: []Filter{field("eq")},
+			}},
+		)}}
+		if err := cfg.Validate(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
