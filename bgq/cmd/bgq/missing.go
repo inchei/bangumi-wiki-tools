@@ -45,8 +45,8 @@ func cmdMissing(args []string) {
 }
 
 func printMissingUsage() {
-	fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
-	fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
+	fmt.Fprintln(os.Stderr, "用法: bgq missing subjects --type <条目类型> [--db <数据库>] <人名>")
+	fmt.Fprintln(os.Stderr, "       bgq missing episodes [--db <数据库>] <人名>")
 }
 
 func cmdMissingSubjects(args []string) {

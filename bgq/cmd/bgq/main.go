@@ -59,8 +59,8 @@ func printUsage() {
   bgq query --config <yaml文件> [--data-dir <数据目录>] [--output <输出文件>]
   bgq serve [--data-dir <数据目录>] [--listen <地址:端口>] [--allowed-origins <域名列表>] [--dev]
   bgq ingest --data-dir <数据目录> --db <数据库路径>
-  bgq missing subjects <人名> --type <条目类型> --db <数据库>
-  bgq missing episodes <人名> [--db <数据库>]
+  bgq missing subjects --type <条目类型> [--db <数据库>] <人名>
+  bgq missing episodes [--db <数据库>] <人名>
   bgq help
 
   子命令:
@@ -76,7 +76,7 @@ func printUsage() {
   bgq serve --allowed-origins "bgm.tv,bangumi.tv"
   bgq serve --dev
   bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
-  bgq missing subjects 川原砾 --type 1 --db ./bangumi.db`)
+  bgq missing subjects --type 1 --db ./bangumi.db 川原砾`)
 }
 
 func cmdQuery(args []string) {

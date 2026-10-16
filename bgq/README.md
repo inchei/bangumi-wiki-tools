@@ -220,23 +220,22 @@ cp -r skills/bgq-query ~/.hermes/skills/data-science/
 检查某人是否在相关条目中缺少 staff 职位关联：
 
 ```bash
-# 检查"川原砾"在书籍(1)类型中缺失的 staff 条目
-./bin/bgq missing subjects "川原砾" --type 1 --db ./bangumi.db
-
-# 限制仅检查特定职位
-./bin/bgq missing subjects "川原砾" --type 1 --db ./bangumi.db --position 1
+# 检查"川原砾"在书籍(1)类型中缺失的 staff 条目（flag 写在人名之前）
+./bin/bgq missing subjects --type 1 --db ./bangumi.db "川原砾"
 ```
 
 | 参数 | 说明 |
 |------|------|
 | `--type` | 条目类型：1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)（必需） |
 | `--db` | DuckDB 数据库路径（默认查找 `./bangumi.db`） |
-| `--position` | 限制仅检查指定职位 ID |
 
 HTTP 接口（serve 后）：
 
 ```bash
 curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1"
+
+# position 参数可限制仅检查指定职位 ID
+curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1&position=1"
 ```
 
 ```json
@@ -261,7 +260,7 @@ Referrer 限制：仅允许来自允许列表内域名（默认 `bgm.tv`、`bang
 检查某人在剧集描述中出现但缺少对应 staff 关联的剧集：
 
 ```bash
-./bin/bgq missing episodes "川原砾" --db ./bangumi.db
+./bin/bgq missing episodes --db ./bangumi.db "川原砾"
 ```
 
 HTTP 接口（serve 后）：
