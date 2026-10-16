@@ -235,6 +235,9 @@ var personEntityFieldMap = map[string]string{
 	"name":      "p.name",
 	"type":      "p.person_type",
 	"career":    "p.career",
+	"summary":   "p.summary",
+	"collects":  "p.collects",
+	"comments":  "p.comments",
 }
 
 // characterEntityFieldMap maps character field names to direct columns on the characters table (alias "c").
@@ -243,6 +246,7 @@ var characterEntityFieldMap = map[string]string{
 	"id":           "c.character_id",
 	"name":         "c.name",
 	"role":         "c.role",
+	"summary":      "c.summary",
 	"comments":     "c.comments",
 	"collects":     "c.collects",
 }

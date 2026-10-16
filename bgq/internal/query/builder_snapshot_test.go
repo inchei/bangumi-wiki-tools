@@ -198,6 +198,43 @@ func generateAllSQL() map[string]string {
 		}
 	}
 
+	// Nested entity conditions must target the real entity columns
+	// (summary/collects/comments), not silently fall back to infobox keys.
+	nestedFieldTests := []struct {
+		name   string
+		target string
+		filter config.Filter
+	}{
+		{"nested_staff_person_collects", "subject", config.Filter{Staff: &config.StaffFilter{
+			Position: "导演", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "collects", Operator: "gt", Value: 100}}},
+		}}},
+		{"nested_staff_person_summary", "subject", config.Filter{Staff: &config.StaffFilter{
+			Position: "导演", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "summary", Operator: "contains", Value: "test"}}},
+		}}},
+		{"nested_person_character_summary", "person", config.Filter{PersonCharacter: &config.PersonCharacterFilter{
+			Type: "CV", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "summary", Operator: "contains", Value: "test"}}},
+		}}},
+		{"nested_subject_cast_character_summary", "subject", config.Filter{SubjectCast: &config.SubjectCastFilter{
+			CharacterConditions: []config.Filter{{Field: &config.FieldFilter{Field: "summary", Operator: "contains", Value: "test"}}},
+		}}},
+	}
+	for _, nt := range nestedFieldTests {
+		cfg := &config.Config{
+			DataDir: testDataDir(), Limit: 10, Target: nt.target,
+			Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+			Filters: []config.Filter{nt.filter},
+		}
+		sql, err := NewSQLBuilder(cfg, cfg.DataDir).Build()
+		if err != nil {
+			results[nt.name] = "ERROR: " + err.Error()
+		} else {
+			results[nt.name] = sql
+		}
+	}
+
 	// Simple filters
 	simpleFilters := []struct {
 		name    string
