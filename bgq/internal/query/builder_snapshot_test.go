@@ -199,7 +199,8 @@ func generateAllSQL() map[string]string {
 	}
 
 	// Nested entity conditions must target the real entity columns
-	// (summary/collects/comments), not silently fall back to infobox keys.
+	// (summary/collects/comments) and the correct alias (the related entity for
+	// person_relation/character_relation), not fall back to infobox keys.
 	nestedFieldTests := []struct {
 		name   string
 		target string
@@ -219,6 +220,14 @@ func generateAllSQL() map[string]string {
 		}}},
 		{"nested_subject_cast_character_summary", "subject", config.Filter{SubjectCast: &config.SubjectCastFilter{
 			CharacterConditions: []config.Filter{{Field: &config.FieldFilter{Field: "summary", Operator: "contains", Value: "test"}}},
+		}}},
+		{"nested_person_relation_name", "person", config.Filter{PersonRelation: &config.PersonRelationFilter{
+			Type: "同事", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+		}}},
+		{"nested_character_relation_name", "character", config.Filter{CharacterRelation: &config.CharacterRelationFilter{
+			Type: "朋友", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
 		}}},
 	}
 	for _, nt := range nestedFieldTests {

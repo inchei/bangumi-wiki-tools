@@ -406,6 +406,13 @@ SELECT s."id", s."name"
 FROM subjects s
 WHERE LIST_CONTAINS(COALESCE(s.meta_tags, []), 'TV')
 LIMIT 10
+nested_character_relation_name	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+character_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'crt')
+SELECT c."character_id", c."name"
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM character_relations cr LEFT JOIN characters rc ON cr.related_person_id = rc.character_id WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002) AND CAST(rc.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+LIMIT 10
 nested_person_character_summary	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
 person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
@@ -413,6 +420,13 @@ characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as in
 SELECT p."person_id", p."name"
 FROM persons p
 WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(c.summary AS VARCHAR) LIKE '%test%' ESCAPE '\')
+LIMIT 10
+nested_person_relation_name	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'prsn')
+SELECT p."person_id", p."name"
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_relations pr LEFT JOIN persons rp ON pr.related_person_id = rp.person_id WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015) AND CAST(rp.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
 LIMIT 10
 nested_staff_person_collects	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),

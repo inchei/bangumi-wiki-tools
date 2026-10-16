@@ -160,7 +160,8 @@ func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias str
 	}
 
 	// Check field map for direct column mapping
-	if expr, ok := fieldMap[f.Field]; ok {
+	if col, ok := fieldMap[f.Field]; ok {
+		expr := nestedAlias + "." + col
 		// Special case: rank 0 means no ranking
 		if f.Field == "rank" {
 			switch f.Operator {
@@ -226,37 +227,39 @@ func (b *SQLBuilder) globalFilterForNested(f *config.GlobalFilter, nestedAlias s
 	}
 }
 
-// personEntityFieldMap maps person field names to direct columns on the persons table (alias "p").
-// Used when filtering person attributes inside staff/relation subqueries,
-// where the junction table alias is NOT "sp".
+// personEntityFieldMap maps person field names to direct columns on the persons
+// table. The column is resolved against the actual nested alias (p for the main
+// person, rp for a person_relation's related person).
 var personEntityFieldMap = map[string]string{
-	"person_id": "p.person_id",
-	"id":        "p.person_id",
-	"name":      "p.name",
-	"type":      "p.person_type",
-	"career":    "p.career",
-	"summary":   "p.summary",
-	"collects":  "p.collects",
-	"comments":  "p.comments",
+	"person_id": "person_id",
+	"id":        "person_id",
+	"name":      "name",
+	"type":      "person_type",
+	"career":    "career",
+	"summary":   "summary",
+	"collects":  "collects",
+	"comments":  "comments",
 }
 
-// characterEntityFieldMap maps character field names to direct columns on the characters table (alias "c").
+// characterEntityFieldMap maps character field names to direct columns on the
+// characters table. The column is resolved against the actual nested alias
+// (c for the main character, rc for a character_relation's related character).
 var characterEntityFieldMap = map[string]string{
-	"character_id": "c.character_id",
-	"id":           "c.character_id",
-	"name":         "c.name",
-	"role":         "c.role",
-	"summary":      "c.summary",
-	"comments":     "c.comments",
-	"collects":     "c.collects",
+	"character_id": "character_id",
+	"id":           "character_id",
+	"name":         "name",
+	"role":         "role",
+	"summary":      "summary",
+	"comments":     "comments",
+	"collects":     "collects",
 }
 
 // personFilterForAlias dispatches a single filter for person-level conditions.
-func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int, junctionAlias string) (string, error) {
-	return b.filterForNestedContext(f, idx, "p", personEntityFieldMap, "p.person_type", junctionAlias)
+func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int, alias string, junctionAlias string) (string, error) {
+	return b.filterForNestedContext(f, idx, alias, personEntityFieldMap, alias+".person_type", junctionAlias)
 }
 
 // characterFilterForAlias dispatches a single filter for character-level conditions.
-func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, error) {
-	return b.filterForNestedContext(f, idx, "c", characterEntityFieldMap, "", "")
+func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int, alias string) (string, error) {
+	return b.filterForNestedContext(f, idx, alias, characterEntityFieldMap, "", "")
 }

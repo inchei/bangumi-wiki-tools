@@ -339,12 +339,12 @@ func (b *SQLBuilder) filterToCtx(f config.Filter, ctx clauseContext, idx int) (s
 
 	// Person context: use person-specific handlers
 	if ctx.isPersonCtx {
-		return b.personFilterForAlias(f, idx, ctx.junctionAlias)
+		return b.personFilterForAlias(f, idx, ctx.alias, ctx.junctionAlias)
 	}
 
 	// Character context: use character-specific handlers
 	if ctx.isCharacterCtx {
-		return b.characterFilterForAlias(f, idx)
+		return b.characterFilterForAlias(f, idx, ctx.alias)
 	}
 
 	// Main alias context (top-level): use main handlers
