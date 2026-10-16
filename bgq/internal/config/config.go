@@ -179,7 +179,7 @@ type SubjectCastFilter struct {
 
 // EpisodeFilter filters by episode.
 type EpisodeFilter struct {
-	Mode     string       `yaml:"mode" json:"mode"`                             // any, all, count
+	Mode     string       `yaml:"mode" json:"mode"`                             // any, all, none, count
 	CountOp  string       `yaml:"count_op,omitempty" json:"count_op,omitempty"` // count mode operator
 	CountVal interface{}  `yaml:"count_val,omitempty" json:"count_val,omitempty"`
 	Logic    *LogicFilter `yaml:"logic,omitempty" json:"logic,omitempty"` // episode condition tree

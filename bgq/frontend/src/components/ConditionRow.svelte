@@ -841,6 +841,7 @@
         >
           <option value="any">任意</option>
           <option value="all">全部</option>
+          <option value="none">排除</option>
           <option value="count">数量</option>
         </select>
         {#if ep.mode === "count"}

@@ -245,11 +245,6 @@ func (c *Config) Validate() error {
 			if err := validateMode(f.Episode.Mode); err != nil {
 				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
-			// Episode filters implement any/all/count only; none would silently
-			// fall through to any in the builder.
-			if f.Episode.Mode == "none" {
-				return fmt.Errorf("筛选条件 %d: episode 筛选不支持 mode: none", i+1)
-			}
 			// Without a condition tree the builder cannot tell which episodes to
 			// match (a missing logic previously matched every subject).
 			if f.Episode.Logic == nil || len(f.Episode.Logic.Items) == 0 {

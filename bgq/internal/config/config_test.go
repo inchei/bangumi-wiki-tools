@@ -97,11 +97,10 @@ func TestValidateEpisodeFilter(t *testing.T) {
 		}
 	})
 
-	t.Run("mode none is rejected", func(t *testing.T) {
+	t.Run("mode none is accepted", func(t *testing.T) {
 		cfg := &Config{Filters: []Filter{episode("none", validLogic)}}
-		err := cfg.Validate()
-		if err == nil || !strings.Contains(err.Error(), "不支持 mode: none") {
-			t.Fatalf("expected none rejection, got %v", err)
+		if err := cfg.Validate(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 

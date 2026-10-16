@@ -14,6 +14,11 @@ func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("episode logic: %w", err)
 	}
+	if f.Mode == "none" {
+		return fmt.Sprintf(
+			`NOT EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND %s)`,
+			episodeWhere), nil
+	}
 	if f.Mode == "all" {
 		return fmt.Sprintf(
 			`EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id) AND

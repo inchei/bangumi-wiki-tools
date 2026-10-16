@@ -341,6 +341,12 @@ SELECT s."id", s."name"
 FROM subjects s
 WHERE CAST((SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
 LIMIT 10
+episode_none_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
+SELECT s."id", s."name"
+FROM subjects s
+WHERE NOT EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+LIMIT 10
 episode_output	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT e."name" AS "_v", e.episode_id AS "_ord" FROM episodes e  WHERE e.subject_id = s.id AND TRUE AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\' ORDER BY e.episode_id LIMIT 1) t) AS "episode.name", (SELECT COUNT(*) FROM episodes e  WHERE e.subject_id = s.id AND TRUE AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') AS "episode.count"
@@ -424,6 +430,12 @@ character_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations
 SELECT c."character_id", c."name"
 FROM characters c
 WHERE EXISTS (SELECT 1 FROM character_relations cr LEFT JOIN characters rc ON cr.related_person_id = rc.character_id WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002) AND CAST(rc.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+LIMIT 10
+nested_episode_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
+SELECT s."id", s."name"
+FROM subjects s
+WHERE NOT EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e.type AS VARCHAR) = '2')
 LIMIT 10
 nested_person_character_summary	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),

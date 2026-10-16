@@ -229,6 +229,11 @@ func generateAllSQL() map[string]string {
 			Type: "朋友", Mode: "any",
 			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
 		}}},
+		{"nested_episode_none", "subject", config.Filter{Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+			{Episode: &config.EpisodeFilter{Mode: "none", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+				{Field: &config.FieldFilter{Field: "type", Operator: "eq", Value: "OP"}},
+			}}}},
+		}}}},
 	}
 	for _, nt := range nestedFieldTests {
 		cfg := &config.Config{
@@ -267,6 +272,11 @@ func generateAllSQL() map[string]string {
 		}}},
 		{"episode_count", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
 			Mode: "count", CountOp: "gte", CountVal: 1, Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
+			}},
+		}}},
+		{"episode_none", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
+			Mode: "none", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
 				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
 			}},
 		}}},
@@ -704,6 +714,11 @@ func generateAllSQLDB() map[string]string {
 		{"global", []string{"subject", "person", "character"}, config.Filter{Global: &config.GlobalFilter{Operator: "contains", Value: "test"}}},
 		{"episode", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
 			Mode: "any", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
+			}},
+		}}},
+		{"episode_none", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
+			Mode: "none", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
 				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
 			}},
 		}}},
