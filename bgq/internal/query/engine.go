@@ -203,7 +203,7 @@ func (r *QueryResult) WriteCSV(path string) error {
 
 // WriteJSONTo writes JSON output to w.
 func (r *QueryResult) WriteJSONTo(w io.Writer) error {
-	var objs []map[string]string
+	objs := []map[string]string{}
 	for _, row := range r.Rows {
 		obj := make(map[string]string)
 		for i, col := range r.Columns {

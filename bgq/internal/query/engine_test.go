@@ -1,9 +1,11 @@
 package query
 
 import (
+	"bytes"
 	"context"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -55,4 +57,15 @@ LIMIT 3;`
 func executeSQLDirectly(ctx context.Context, sql string) (*QueryResult, error) {
 	e := &Engine{}
 	return e.executeSQL(ctx, sql)
+}
+
+func TestWriteJSONToEmptyResult(t *testing.T) {
+	var buf bytes.Buffer
+	r := &QueryResult{Columns: []string{"id"}, Rows: [][]string{}}
+	if err := r.WriteJSONTo(&buf); err != nil {
+		t.Fatalf("WriteJSONTo failed: %v", err)
+	}
+	if got := strings.TrimSpace(buf.String()); got != "[]" {
+		t.Fatalf("empty result should encode as [], got %q", got)
+	}
 }
