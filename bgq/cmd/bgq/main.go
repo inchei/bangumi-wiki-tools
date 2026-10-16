@@ -300,6 +300,12 @@ func resolveDataDir(dataDir, configFile string) string {
 }
 
 func runIngest(dataDir, dbPath string) error {
+	// Tables are created with CREATE TABLE IF NOT EXISTS, so importing into an
+	// existing database would silently keep the old data.
+	if _, err := os.Stat(dbPath); err == nil {
+		return fmt.Errorf("数据库已存在: %s", dbPath)
+	}
+
 	// Create DuckDB database and import JSONLines files
 	ctx := context.Background()
 
