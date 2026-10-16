@@ -5,8 +5,9 @@ import (
 )
 
 // outputCTENeeds records which junction CTEs are required purely by
-// association output columns (e.g. "原作.name", "episode.id"), independent of
-// the filters. Prefix resolution mirrors the switch in buildSelect.
+// association references (e.g. "原作.name" output columns or "导演.生日" sort
+// fields), independent of the filters. Prefix resolution mirrors the switch in
+// assocOutputColumn.
 type outputCTENeeds struct {
 	relations          bool // subject_relations
 	persons            bool // subject_persons + persons
@@ -24,35 +25,45 @@ func (b *SQLBuilder) assocLimit() int {
 	return 1
 }
 
-// cteNeedsFromOutputColumns scans cfg.Output.Columns for "prefix.field"
-// association columns and reports which junction CTEs they need.
-func (b *SQLBuilder) cteNeedsFromOutputColumns() outputCTENeeds {
-	var n outputCTENeeds
-	if b.cfg.Output == nil {
-		return n
-	}
-	for _, col := range b.cfg.Output.Columns {
-		prefix, _, ok := strings.Cut(col, ".")
-		if !ok {
-			continue
+// addCTENeed classifies a "prefix.field" association reference (from an output
+// column or a sort field) and records the junction CTE it requires.
+func (b *SQLBuilder) addCTENeed(n *outputCTENeeds, prefix string) {
+	switch {
+	case prefix == "episode":
+		n.episodes = true
+	case len(b.getRelationIDsForName(prefix)) > 0:
+		n.relations = true
+	case b.target == "subject" && len(b.getPositionIDsForName(prefix)) > 0:
+		n.persons = true
+	case b.target == "subject":
+		if _, ok := b.getCharacterAssociationTypeID(prefix); ok {
+			n.characters = true
 		}
-		switch {
-		case prefix == "episode":
-			n.episodes = true
-		case len(b.getRelationIDsForName(prefix)) > 0:
-			n.relations = true
-		case b.target == "subject" && len(b.getPositionIDsForName(prefix)) > 0:
-			n.persons = true
-		case b.target == "subject":
-			if _, ok := b.getCharacterAssociationTypeID(prefix); ok {
-				n.characters = true
+	case b.target == "person" && len(b.getPersonRelationIDsForName(prefix)) > 0:
+		n.personRelations = true
+	case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
+		n.characterRelations = true
+	case (b.target == "person" || b.target == "character") && b.isPersonCharacterTypeName(prefix):
+		n.personCharacters = true
+	}
+}
+
+// assocCTENeeds scans association references in output columns and sort fields
+// and reports which junction CTEs they require. Sort fields must be included:
+// ordering by "导演.生日" builds the same correlated subquery as an output
+// column, so omitting them leaves the referenced CTE undefined in JSON mode.
+func (b *SQLBuilder) assocCTENeeds() outputCTENeeds {
+	var n outputCTENeeds
+	if b.cfg.Output != nil {
+		for _, col := range b.cfg.Output.Columns {
+			if prefix, _, ok := strings.Cut(col, "."); ok {
+				b.addCTENeed(&n, prefix)
 			}
-		case b.target == "person" && len(b.getPersonRelationIDsForName(prefix)) > 0:
-			n.personRelations = true
-		case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
-			n.characterRelations = true
-		case (b.target == "person" || b.target == "character") && b.isPersonCharacterTypeName(prefix):
-			n.personCharacters = true
+		}
+	}
+	for _, s := range b.cfg.Sort {
+		if prefix, _, ok := strings.Cut(s.Field, "."); ok {
+			b.addCTENeed(&n, prefix)
 		}
 	}
 	return n

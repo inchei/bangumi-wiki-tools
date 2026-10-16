@@ -129,7 +129,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 
 	// Association output columns reference junction tables even when no filter
 	// of that kind is present, so include them in CTE loading decisions.
-	needs := b.cteNeedsFromOutputColumns()
+	needs := b.assocCTENeeds()
 
 	var ctes []string
 

@@ -420,6 +420,12 @@ func generateAllSQL() map[string]string {
 			[]string{"person_id", "name", "CV.{name|s.date}"},
 			config.Filter{PersonCharacter: &config.PersonCharacterFilter{Type: "CV", Mode: "any"}},
 			[]config.SortRule{{Field: "CV.s.date", Direction: "desc"}}},
+		// Regression: sorting by an association with neither a matching filter
+		// nor an association output column must still load the junction CTE.
+		{"sort_assoc_no_filter_no_column", "subject",
+			[]string{"id", "name"},
+			config.Filter{Type: &config.TypeFilter{Value: 2}},
+			[]config.SortRule{{Field: "导演.生日", Direction: "desc"}}},
 	}
 	for _, st := range assocSortTests {
 		cfg := &config.Config{

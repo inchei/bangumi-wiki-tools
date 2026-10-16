@@ -725,6 +725,14 @@ FROM persons p
 WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0)
 ORDER BY (SELECT max(TRY_CAST(CASE WHEN regexp_matches(replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', ''), '^\d{4}$') THEN replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') || '-01-01' WHEN regexp_matches(replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', ''), '^\d{4}-\d{1,2}$') THEN replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') || '-01' ELSE replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') END AS DATE)) FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0) DESC
 LIMIT 10
+sort_assoc_no_filter_no_column	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT s."id", s."name"
+FROM subjects s
+WHERE s.type = 2
+ORDER BY (SELECT max(TRY_CAST(CASE WHEN regexp_matches(replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', ''), '^\d{4}$') THEN replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', '') || '-01-01' WHEN regexp_matches(replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', ''), '^\d{4}-\d{1,2}$') THEN replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', '') || '-01' ELSE replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', '') END AS DATE)) FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (2, 1016, 4002)) DESC
+LIMIT 10
 sort_assoc_staff_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
