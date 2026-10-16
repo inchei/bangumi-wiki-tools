@@ -222,11 +222,15 @@ cp -r skills/bgq-query ~/.hermes/skills/data-science/
 ```bash
 # 检查"川原砾"在书籍(1)类型中缺失的 staff 条目（flag 写在人名之前）
 ./bin/bgq missing subjects --type 1 --db ./bangumi.db "川原砾"
+
+# 限制仅检查职位 ID 2001（作者）
+./bin/bgq missing subjects --type 1 --position 2001 --db ./bangumi.db "川原砾"
 ```
 
 | 参数 | 说明 |
 |------|------|
 | `--type` | 条目类型：1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)（必需） |
+| `--position` | 限制仅检查指定职位 ID（默认检查全部职位） |
 | `--db` | DuckDB 数据库路径（默认查找 `./bangumi.db`） |
 
 HTTP 接口（serve 后）：
@@ -235,7 +239,7 @@ HTTP 接口（serve 后）：
 curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1"
 
 # position 参数可限制仅检查指定职位 ID
-curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1&position=1"
+curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1&position=2001"
 ```
 
 ```json

@@ -7,6 +7,25 @@ import (
 	"github.com/inchei/bangumi-query/internal/model"
 )
 
+func TestNarrowPositions(t *testing.T) {
+	all := map[int]string{2001: "作者", 2002: "作画"}
+
+	got, err := narrowPositions(1, all, 0)
+	if err != nil || len(got) != 2 {
+		t.Fatalf("posID 0 should keep all positions, got %v (err %v)", got, err)
+	}
+
+	got, err = narrowPositions(1, all, 2001)
+	if err != nil || len(got) != 1 || got[2001] != "作者" {
+		t.Fatalf("posID 2001 should narrow to 作者, got %v (err %v)", got, err)
+	}
+
+	_, err = narrowPositions(1, all, 9999)
+	if err == nil || !strings.Contains(err.Error(), "没有职位 ID 9999") {
+		t.Fatalf("unknown position should error, got %v", err)
+	}
+}
+
 func TestBuildCheckSQL_BookExcludesSeries(t *testing.T) {
 	positions := map[int]string{2001: "作者"}
 	sql := buildCheckSQL(1, "川原砾", positions, 0)

@@ -45,7 +45,7 @@ func cmdMissing(args []string) {
 }
 
 func printMissingUsage() {
-	fmt.Fprintln(os.Stderr, "用法: bgq missing subjects --type <条目类型> [--db <数据库>] <人名>")
+	fmt.Fprintln(os.Stderr, "用法: bgq missing subjects --type <条目类型> [--position <职位ID>] [--db <数据库>] <人名>")
 	fmt.Fprintln(os.Stderr, "       bgq missing episodes [--db <数据库>] <人名>")
 }
 
@@ -54,6 +54,7 @@ func cmdMissingSubjects(args []string) {
 	dbPath := addMissingDBFlags(fs)
 	var typeCode int
 	fs.IntVar(&typeCode, "type", 0, "条目类型: 1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)")
+	positionID := fs.Int("position", 0, "限制仅检查指定职位 ID（默认检查全部职位）")
 	name := mustParseMissingNameArg(fs, args)
 
 	if typeCode == 0 {
@@ -64,7 +65,7 @@ func cmdMissingSubjects(args []string) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
 	defer cancel()
-	runMissingSubjects(ctx, name, typeCode, dbPathStr)
+	runMissingSubjects(ctx, name, typeCode, *positionID, dbPathStr)
 }
 
 func cmdMissingEpisodes(args []string) {
@@ -115,10 +116,28 @@ func mustResolveMissingDB(dbPath string) string {
 	return dbPath
 }
 
-func runMissingSubjects(ctx context.Context, name string, typeCode int, dbPath string) {
-	positions := model.StaffPositions[typeCode]
-	if len(positions) == 0 {
+// narrowPositions returns all positions, or only the requested one when posID
+// is set. Staff position IDs start at 1, so 0 means "no restriction".
+func narrowPositions(typeCode int, all map[int]string, posID int) (map[int]string, error) {
+	if posID == 0 {
+		return all, nil
+	}
+	name, ok := all[posID]
+	if !ok {
+		return nil, fmt.Errorf("条目类型 %d 没有职位 ID %d", typeCode, posID)
+	}
+	return map[int]string{posID: name}, nil
+}
+
+func runMissingSubjects(ctx context.Context, name string, typeCode, positionID int, dbPath string) {
+	allPositions := model.StaffPositions[typeCode]
+	if len(allPositions) == 0 {
 		fmt.Fprintf(os.Stderr, "条目类型 %d 没有职位定义\n", typeCode)
+		os.Exit(1)
+	}
+	positions, err := narrowPositions(typeCode, allPositions, positionID)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
