@@ -136,15 +136,15 @@ func (e *Engine) executeSQL(ctx context.Context, sql string) (*QueryResult, erro
 
 	output, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("DuckDB查询失败: %w\nStderr: %s\nSQL文件: %s\nSQL:\n%s",
-			err, stderr.String(), tmpPath, sql)
+		return nil, fmt.Errorf("DuckDB查询失败: %w\nStderr: %s\nSQL:\n%s",
+			err, stderr.String(), sql)
 	}
 
 	// Empty output with stderr = real error; empty output without stderr = empty result set
 	if len(output) == 0 {
 		if stderr.Len() > 0 {
-			return nil, fmt.Errorf("DuckDB 查询失败\nStderr: %s\nSQL文件: %s\nSQL:\n%s",
-				stderr.String(), tmpPath, sql)
+			return nil, fmt.Errorf("DuckDB 查询失败\nStderr: %s\nSQL:\n%s",
+				stderr.String(), sql)
 		}
 		return &QueryResult{Columns: []string{}, Rows: [][]string{}, TotalRows: 0}, nil
 	}
