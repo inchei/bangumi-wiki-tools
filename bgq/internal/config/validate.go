@@ -64,9 +64,7 @@ func countFilterTree(filters []Filter, depth int) (count int, maxDepth int) {
 func (c *Config) Validate() error {
 	// Mirror the Web UI's YAML editor: unknown targets are rejected instead
 	// of silently falling back to "subject".
-	switch c.Target {
-	case "", "subject", "person", "character", "episode":
-	default:
+	if c.Target != "" && !validTargets[c.Target] {
 		return fmt.Errorf("target「%s」不存在", c.Target)
 	}
 
@@ -306,12 +304,30 @@ func validateFilter(f *Filter, target string) error {
 // understands (unknown modes currently fall back to "any" silently, which
 // hides typos).
 func validateMode(mode string) error {
-	switch mode {
-	case "any", "all", "none", "count":
-		return nil
+	if !validModes[mode] {
+		return fmt.Errorf("mode「%s」不存在", mode)
 	}
-	return fmt.Errorf("mode「%s」不存在", mode)
+	return nil
 }
+
+// validTargets, validModes, and validOperators are the exact sets YAML
+// validation accepts. The Web UI re-implements them in
+// frontend/src/yaml.js (TARGETS/MODES/OPERATORS) — the parity test
+// TestFrontendValidationParity fails when the two sides drift apart.
+var (
+	validTargets = map[string]bool{
+		"subject":   true,
+		"person":    true,
+		"character": true,
+		"episode":   true,
+	}
+	validModes = map[string]bool{
+		"any":   true,
+		"all":   true,
+		"none":  true,
+		"count": true,
+	}
+)
 
 var validOperators = map[string]bool{
 	"eq":           true,

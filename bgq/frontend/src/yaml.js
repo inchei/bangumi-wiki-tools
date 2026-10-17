@@ -440,6 +440,11 @@ function checkSort(sort, errors) {
   }
 }
 
+// The validation sets below (TARGETS / MODES / OPERATORS / FILTER_KEYS /
+// SUBJECT_TYPE_NUMS) mirror the Go contract in internal/config/validate.go
+// (validTargets / validModes / validOperators / Filter's yaml tags /
+// model.TypeNumToCN). Keep both sides together —
+// TestFrontendValidationParity fails `go test ./internal/config/` on drift.
 const TARGETS = new Set(["subject", "person", "character", "episode"]);
 const PLATFORM_CODES = new Set(PLATFORMS.map((p) => p.code));
 const OPERATORS = new Set([
@@ -475,31 +480,34 @@ const FILTER_KEYS = [
   "subject_cast",
   "character_person",
   "episode",
+  "logic",
 ];
 
 function walkFilters(filters, errors) {
   if (!Array.isArray(filters)) return;
   for (const f of filters) {
     if (!f || typeof f !== "object") continue;
-    if (f.logic) {
-      checkKeys("logic", f.logic, errors);
-      walkFilters(f.logic.items, errors);
-      continue;
-    }
     for (const k of Object.keys(f)) {
       if (!FILTER_KEYS.includes(k) && !k.startsWith("_")) {
         errors.add(`未知筛选键「${k}」`);
       }
     }
-    if (!FILTER_KEYS.some((k) => f[k])) {
-      errors.add("筛选条件未包含任何有效的过滤类型");
+    // Mirror backend validateFilter: exactly one filter type per condition.
+    const setKeys = FILTER_KEYS.filter((k) => f[k]);
+    if (setKeys.length === 0) {
+      errors.add("至少需要指定一个过滤类型");
       continue;
     }
-    for (const key of FILTER_KEYS) {
-      if (f[key]) {
-        checkKeys(key, f[key], errors);
-        checkNode(key, f[key], errors);
-      }
+    if (setKeys.length > 1) {
+      errors.add("每个条件只能指定一种过滤类型");
+      continue;
+    }
+    if (f.logic) {
+      checkKeys("logic", f.logic, errors);
+      walkFilters(f.logic.items, errors);
+    } else {
+      checkKeys(setKeys[0], f[setKeys[0]], errors);
+      checkNode(setKeys[0], f[setKeys[0]], errors);
     }
   }
 }
