@@ -143,6 +143,17 @@ func containsASCII(s string) bool {
 	return false
 }
 
+var positionMergeAliases = map[int]int{
+	23: 53,
+}
+
+func canonicalPosID(pos int) int {
+	if merged, ok := positionMergeAliases[pos]; ok {
+		return merged
+	}
+	return pos
+}
+
 var allPosIDs []int
 var allPosNameToID map[string]int
 var allPosIDToName map[int]string

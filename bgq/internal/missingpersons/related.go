@@ -98,6 +98,7 @@ WHERE sp.person_id IN (%s)
 		pid, _ := strconv.Atoi(row[1])
 		sid, _ := strconv.Atoi(row[0])
 		pos, _ := strconv.Atoi(row[2])
+		pos = canonicalPosID(pos)
 		if linkedMap[pid] == nil {
 			linkedMap[pid] = make(map[int]map[int]bool)
 		}
