@@ -23,6 +23,12 @@ var DuckDBPath = "duckdb"
 // process against a multi-GB database).
 var execSem = make(chan struct{}, 4)
 
+// bailOn is piped to DuckDB before user SQL: in stdin batch mode the CLI
+// otherwise keeps executing statements after an error, while the old
+// `-f file` path aborted at the first one. It also guarantees the db-mode
+// lockdown SET cannot be stepped over.
+const bailOn = ".bail on\n"
+
 // SetDuckDBPath allows setting the DuckDB binary path.
 func SetDuckDBPath(path string) {
 	DuckDBPath = path
@@ -99,31 +105,23 @@ func (e *Engine) executeSQL(ctx context.Context, sql string) (*QueryResult, erro
 
 	sql = e.applyLockdown(sql)
 
-	// Write SQL to temp file (avoids shell escaping issues)
-	tmpFile, err := os.CreateTemp("", "bgq-query-*.sql")
-	if err != nil {
-		return nil, fmt.Errorf("创建临时SQL文件失败: %w", err)
-	}
-	tmpPath := tmpFile.Name()
-	defer func() { _ = os.Remove(tmpPath) }()
-
-	if _, err := tmpFile.WriteString(sql); err != nil {
-		_ = tmpFile.Close()
-		return nil, fmt.Errorf("写入SQL文件失败: %w", err)
-	}
-	_ = tmpFile.Close()
-
-	// Build DuckDB CLI command — use CSV mode (preserves column order, handles empty results)
-	args := []string{"-csv", "-f", tmpPath}
+	// Pipe the SQL through stdin instead of writing a temp file: no disk I/O,
+	// no user SQL left on disk if the process crashes, and DuckDB errors can
+	// never leak a temp path. exec passes argv directly, so there are no
+	// shell escaping concerns either.
+	//
+	// CSV mode preserves column order and handles empty results.
+	args := []string{"-csv"}
 
 	// If a persistent database exists, use it in read-only mode so a query can
 	// never modify the underlying database file.
 	if e.dbPath != "" {
-		args = append([]string{"-readonly", e.dbPath}, args...)
+		args = append(args, "-readonly", e.dbPath)
 	}
 
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(ctx, DuckDBPath, args...)
+	cmd.Stdin = strings.NewReader(bailOn + sql)
 	cmd.Stderr = &stderr
 
 	// Acquire a concurrency slot, aborting promptly if the context is cancelled.
@@ -228,19 +226,8 @@ func (r *QueryResult) WriteJSON(path string) error {
 
 // ExecuteDuckDBSQL executes raw SQL against a DuckDB database (for ingest).
 func ExecuteDuckDBSQL(ctx context.Context, dbPath, sql string) error {
-	tmpFile, err := os.CreateTemp("", "bgq-ingest-*.sql")
-	if err != nil {
-		return fmt.Errorf("创建临时SQL文件失败: %w", err)
-	}
-	defer func() { _ = os.Remove(tmpFile.Name()) }()
-
-	if _, err := tmpFile.WriteString(sql); err != nil {
-		_ = tmpFile.Close()
-		return fmt.Errorf("写入SQL文件失败: %w", err)
-	}
-	_ = tmpFile.Close()
-
-	cmd := exec.CommandContext(ctx, DuckDBPath, dbPath, "-f", tmpFile.Name())
+	cmd := exec.CommandContext(ctx, DuckDBPath, dbPath)
+	cmd.Stdin = strings.NewReader(bailOn + sql)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
