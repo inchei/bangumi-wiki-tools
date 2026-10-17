@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/inchei/bangumi-query/internal/model"
 	"github.com/inchei/bangumi-query/internal/query"
@@ -216,20 +217,32 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 
 	escapedNameSQL := query.EscapeLiteral(name)
 
-	// Phase 0: pre-load linked subjects for this person
-	linked := queryLinked(r.Context(), s.dbPath, s.dataDir, escapedNameSQL, targetID)
+	// Phases 0+1 run concurrently: the linked-subjects lookup and the wide
+	// episode filter are independent DuckDB invocations, so overlapping them
+	// hides the smaller query's latency behind the scan.
+	var (
+		linked   map[int]map[int]map[string]bool
+		result   *query.QueryResult
+		queryErr error
+	)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		linked = queryLinked(r.Context(), s.dbPath, s.dataDir, escapedNameSQL, targetID)
+	}()
+	go func() {
+		defer wg.Done()
+		engine := query.NewEngine(s.dbPath, s.dataDir)
+		result, queryErr = engine.ExecuteRaw(r.Context(), buildEpSearchSQL(escapedNameSQL))
+	}()
+	wg.Wait()
 
-	// Phase 1: DuckDB wide filter
-	sql := buildEpSearchSQL(escapedNameSQL)
-
-	engine := query.NewEngine(s.dbPath, s.dataDir)
-	result, err := engine.ExecuteRaw(r.Context(), sql)
-	if err != nil {
-		id := s.logQueryFailure(r, "missing-episodes", err)
+	if queryErr != nil {
+		id := s.logQueryFailure(r, "missing-episodes", queryErr)
 		writeJSON(w, http.StatusInternalServerError, apiError{Error: "查询失败（请求 ID: " + id + "）"})
 		return
 	}
-
 	// Phase 2: Go position matching
 	temp := collectEpMatches(result.Rows, lit2pid, combinedRe, nameRe, linked)
 
@@ -376,7 +389,8 @@ type epSubject struct {
 
 // buildEpSearchSQL returns the DuckDB wide-filter query for episode
 // descriptions mentioning a person name. `escapedNameSQL` must already
-// have single quotes escaped.
+// have single quotes escaped and name-space normalization is handled by
+// the pattern below.
 func buildEpSearchSQL(escapedNameSQL string) string {
 	return fmt.Sprintf(`
 SELECT e.episode_id, e.subject_id, s.name AS subject_name, e.sort, e.type, e.description
@@ -384,9 +398,32 @@ FROM episodes e
 JOIN subjects s ON e.subject_id = s.id
 WHERE e.disc = 0
   AND s.type = 2
-  AND contains(REPLACE(REPLACE(e.description, '　', ''), ' ', ''), REPLACE(REPLACE('%s', '　', ''), ' ', ''))
+  AND regexp_matches(e.description, '%s')
 ORDER BY e.subject_id, e.sort, e.type
-`, escapedNameSQL)
+`, escapedNameSpaceTolerantPattern(escapedNameSQL))
+}
+
+// escapedNameSpaceTolerantPattern turns an escaped SQL name literal into a
+// DuckDB regex matching its characters with optional U+3000/ASCII spaces
+// between them: contains(N(desc), N(name)) — N stripping those spaces on
+// both sides — is true exactly when a span of the description is the name's
+// characters interleaved arbitrarily with such spaces, which is what this
+// pattern accepts.
+func escapedNameSpaceTolerantPattern(escapedNameSQL string) string {
+	raw := strings.ReplaceAll(escapedNameSQL, "''", "'")
+
+	var pat strings.Builder
+	for _, r := range raw {
+		switch r {
+		case ' ', '　':
+			continue
+		}
+		if pat.Len() > 0 {
+			pat.WriteString(`[ 　]*`)
+		}
+		pat.WriteString(regexp.QuoteMeta(string(r)))
+	}
+	return pat.String()
 }
 
 // collectEpMatches runs position matching over DuckDB episode rows and

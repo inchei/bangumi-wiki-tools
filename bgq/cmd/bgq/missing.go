@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/inchei/bangumi-query/internal/model"
@@ -163,12 +164,11 @@ func runMissingSubjects(ctx context.Context, name string, typeCode, positionID i
 }
 
 func runMissingEpisodes(ctx context.Context, name string, dbPath string) {
-	positions := make(map[int]string)
-	for _, m := range model.StaffPositions {
-		for id, posName := range m {
-			positions[id] = posName
-		}
-	}
+	// Anime-only position table, matching the HTTP handler: episode scanning
+	// is restricted to type-2 subjects, and merging the per-type tables
+	// collides same-ID different-name entries, making literal→position
+	// bindings vary between runs.
+	positions := model.StaffPositions[2]
 
 	lit2pid, combinedRe := buildEpPositionTable(positions)
 	if combinedRe == nil {
@@ -182,14 +182,28 @@ func runMissingEpisodes(ctx context.Context, name string, dbPath string) {
 
 	escapedNameSQL := query.EscapeLiteral(name)
 	// CLI has no archive dataDir and no target person-ID ("0" → name lookup).
-	linked := queryLinked(ctx, dbPath, "", escapedNameSQL, 0)
+	// The two queries are independent DuckDB invocations; overlapping them
+	// hides the linked-subjects lookup behind the episode scan.
+	var (
+		linked   map[int]map[int]map[string]bool
+		result   *query.QueryResult
+		queryErr error
+	)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		linked = queryLinked(ctx, dbPath, "", escapedNameSQL, 0)
+	}()
+	go func() {
+		defer wg.Done()
+		engine := query.NewEngine(dbPath, "")
+		result, queryErr = engine.ExecuteRaw(ctx, buildEpSearchSQL(escapedNameSQL))
+	}()
+	wg.Wait()
 
-	sql := buildEpSearchSQL(escapedNameSQL)
-
-	engine := query.NewEngine(dbPath, "")
-	result, err := engine.ExecuteRaw(ctx, sql)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "查询失败: %v\n", err)
+	if queryErr != nil {
+		fmt.Fprintf(os.Stderr, "查询失败: %v\n", queryErr)
 		os.Exit(1)
 	}
 

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"regexp"
 	"strconv"
 	"testing"
+
+	"github.com/inchei/bangumi-query/internal/query"
 )
 
 func TestExpandAppearEps_Single(t *testing.T) {
@@ -101,5 +104,48 @@ func TestBuildEpPositionTable_ProducesRegex(t *testing.T) {
 	}
 	if !re.MatchString("原作") {
 		t.Error("regex should match 原作")
+	}
+}
+
+func TestEscapedNameSpaceTolerantPattern(t *testing.T) {
+	cases := []struct {
+		name string
+		want string
+	}{
+		{"今石洋之", `今[ 　]*石[ 　]*洋[ 　]*之`},
+		{"C.C.", `C[ 　]*\.[ 　]*C[ 　]*\.`},
+		{"OVA*版", `O[ 　]*V[ 　]*A[ 　]*\*[ 　]*版`},
+		{"今 石 洋之", `今[ 　]*石[ 　]*洋[ 　]*之`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := escapedNameSpaceTolerantPattern(query.EscapeLiteral(tc.name))
+			if got != tc.want {
+				t.Errorf("got %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestEscapedNameSpaceTolerantPattern_ContainsSlices pins the space-tolerant
+// substring semantics the wide filter must keep for the Go exact-match phase.
+func TestEscapedNameSpaceTolerantPattern_ContainsSlices(t *testing.T) {
+	cases := []struct {
+		esc string
+		ok  bool
+	}{
+		{"今石洋之", true},
+		{"今 石洋之", true},
+		{"今石 洋之", true},
+		{"今　石　洋　之", true},
+		{"今石X洋之", false},
+		{"今\t石洋之", false},
+		{"今石洋", false},
+	}
+	for _, tc := range cases {
+		re := regexp.MustCompile(escapedNameSpaceTolerantPattern(query.EscapeLiteral("今石洋之")))
+		if got := re.MatchString(tc.esc); got != tc.ok {
+			t.Errorf("pattern against %q = %v, want %v", tc.esc, got, tc.ok)
+		}
 	}
 }
