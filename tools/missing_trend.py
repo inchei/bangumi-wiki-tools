@@ -9,7 +9,8 @@
 
 历史数据仅存为 JSON（时间-数量对列表），存在 actions cache 中，
 每周合并最新统计后绘图。下载 Archive 由 CI 另行负责，本脚本不做
-任何下载。输出一张 PNG 图片（仅 missing / related 两线，全拉丁文），
+任何下载。输出两张 PNG（light / dark 各一张，仅 missing / related 两线，
+全拉丁文），dark 版按系统 prefers-color-scheme 由 HTML <picture> 切换，
 挂到 GH Pages 展示。
 
 注：chart-xkcd（PyPI）只能输出 HTML（JS 渲染），无法导出 PNG，
@@ -72,7 +73,25 @@ def load_history(path: Path):
         return []
 
 
-def render_png(trend, out: Path, title="MISSING PERSONS BACKLOG"):
+THEMES = {
+    "light": {
+        "missing": "#1f77b4",
+        "related": "#ff7f0e",
+        "bg": None,
+        "text": None,
+        "edge": None,
+    },
+    "dark": {
+        "missing": "#58a6ff",
+        "related": "#ffa657",
+        "bg": "#0d1117",
+        "text": "#c9d1d9",
+        "edge": "#30363d",
+    },
+}
+
+
+def render_png(trend, out: Path, title="MISSING PERSONS BACKLOG", theme="light"):
     """xkcd Script 手绘风格 PNG，仅 missing / related 两线，全大写拉丁文。"""
     import logging
     import matplotlib
@@ -81,6 +100,7 @@ def render_png(trend, out: Path, title="MISSING PERSONS BACKLOG"):
     logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
     import matplotlib.pyplot as plt
 
+    colors = THEMES.get(theme, THEMES["light"])
     trend = sorted(trend, key=lambda x: x.get("date", ""))
     dates = [(x.get("date", "")[5:] or x.get("date", "")) for x in trend]
     missing = [x.get("totalMissing", 0) or 0 for x in trend]
@@ -89,27 +109,44 @@ def render_png(trend, out: Path, title="MISSING PERSONS BACKLOG"):
     with plt.xkcd():
         # 强制使用 xkcd Script（链中排第二，默认会被 xkcd 抢掉）
         plt.rcParams["font.family"] = "xkcd Script"
+        if colors["bg"]:
+            rc_overrides = {
+                "figure.facecolor": colors["bg"],
+                "axes.facecolor": colors["bg"],
+                "text.color": colors["text"],
+                "axes.edgecolor": colors["edge"],
+                "axes.labelcolor": colors["text"],
+                "xtick.color": colors["text"],
+                "ytick.color": colors["text"],
+                # xkcd 默认给文字/线条加白描边，深色底上刺眼，去掉
+                "path.effects": [],
+            }
+            for key, val in rc_overrides.items():
+                plt.rcParams[key] = val
         fig, ax1 = plt.subplots(figsize=(10, 5))
         # 双纵轴：missing 走左轴，related 走右轴，各自截断下方空白
-        l1, = ax1.plot(dates, missing, marker="o", color="#1f77b4", label="MISSING")
-        ax1.set_ylabel("MISSING PERSONS", color="#1f77b4")
-        ax1.tick_params(axis="y", labelcolor="#1f77b4")
+        l1, = ax1.plot(dates, missing, marker="o", color=colors["missing"], label="MISSING")
+        ax1.set_ylabel("MISSING PERSONS", color=colors["missing"])
+        ax1.tick_params(axis="y", labelcolor=colors["missing"])
         span1 = max(max(missing) - min(missing), 1)
         ax1.set_ylim(min(missing) - span1 * 0.4, max(missing) + span1 * 0.4)
 
         ax2 = ax1.twinx()
-        l2, = ax2.plot(dates, related, marker="o", color="#ff7f0e", label="RELATED")
-        ax2.set_ylabel("RELATED PERSONS", color="#ff7f0e")
-        ax2.tick_params(axis="y", labelcolor="#ff7f0e")
+        l2, = ax2.plot(dates, related, marker="o", color=colors["related"], label="RELATED")
+        ax2.set_ylabel("RELATED PERSONS", color=colors["related"])
+        ax2.tick_params(axis="y", labelcolor=colors["related"])
         span2 = max(max(related) - min(related), 1)
         ax2.set_ylim(min(related) - span2 * 0.4, max(related) + span2 * 0.4)
 
         ax1.set_title(title.upper())
         ax1.set_xlabel("DATE")
-        ax1.legend(handles=[l1, l2], loc="upper left", framealpha=0.9)
+        legend_kw = {}
+        if colors["bg"]:
+            legend_kw = {"labelcolor": colors["text"], "facecolor": colors["bg"], "edgecolor": colors["edge"]}
+        ax1.legend(handles=[l1, l2], loc="upper left", framealpha=0.9, **legend_kw)
         fig.autofmt_xdate(rotation=20)
         out.parent.mkdir(parents=True, exist_ok=True)
-        fig.savefig(out, dpi=120, bbox_inches="tight")
+        fig.savefig(out, dpi=120, bbox_inches="tight", facecolor=fig.get_facecolor())
         plt.close(fig)
     print(f"图表已保存 {out}", flush=True)
 
@@ -157,7 +194,8 @@ def main():
 
     out = Path(args.out)
     title = f"Missing persons {trend[0].get('date','')} ~ {trend[-1].get('date','')}"
-    render_png(trend, out, title)
+    render_png(trend, out, title, "light")
+    render_png(trend, out.with_name(out.stem + "-dark" + out.suffix), title, "dark")
 
 
 if __name__ == "__main__":
