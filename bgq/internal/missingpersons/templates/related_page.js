@@ -42,7 +42,8 @@ window.addEventListener('message', (e) => {
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-create');
   if (!btn || btn.dataset.force !== '1') return;
-  e.preventDefault();
+  const frag = (btn.getAttribute('href') || '').startsWith('#');
+  if (!frag) e.preventDefault();
   e.stopPropagation();
   const idx = parseInt(btn.dataset.idx, 10);
   const name = btn.dataset.name;
@@ -61,7 +62,8 @@ document.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-relate');
   if (!btn) return;
-  e.preventDefault();
+  const frag = (btn.getAttribute('href') || '').startsWith('#');
+  if (!frag) e.preventDefault();
   e.stopPropagation();
   const idx = parseInt(btn.dataset.idx, 10);
   const data = _relatedData[idx];
@@ -77,7 +79,8 @@ document.addEventListener('click', (e) => {
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.btn-alias');
   if (!btn) return;
-  e.preventDefault();
+  const frag = (btn.getAttribute('href') || '').startsWith('#');
+  if (!frag) e.preventDefault();
   e.stopPropagation();
   const idx = parseInt(btn.dataset.idx, 10);
   const data = _relatedData[idx];
