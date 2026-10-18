@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/inchei/bangumi-query/internal/aliases"
 	"github.com/inchei/bangumi-query/internal/model"
@@ -95,42 +97,42 @@ func extractPersonCNName(infobox string) string {
 	return ""
 }
 
-var noiseEnRe = regexp.MustCompile(`(?i)\b(?:` +
-	`letterer|colorist|inker|penciler|penciller|translator|editor|` +
-	`assistant|credited|uncredited|retouch|assist|technic?ian|` +
-	`coordinat(?:or|ion)|contributor|collaborator|producer|` +
-	`supervis(?:or|ion)|manage[rm]|planner|director|` +
-	`distribut(?:or|ion)|packager|printer|binder|staff|` +
-	`piano|violin|guitar|bass|drums|flute|sax(?:ophone)?|` +
-	`cello|harp|trumpet|trombone|clarinet|oboe|viola|` +
-	`ukulele|synthesiz(?:s|er)|keyboard|drum|` +
-	`recording|mastering|remastering|vocaloid|utau|` +
-	`(?:various\s+)?artists|` +
-	`p[lc]c?|llc|l\.?t\.?d|ltd|gmbh|inc|corp|co|` +
-	`android|ios|windows|steam|switch|new|` +
-	`program|programming|programmer|design|designer|writer|` +
-	`producer|direction?|effects?|graphics?|scenario|planning|` +
-	`coordinat(?:or|ion)` +
-	`)\b|` +
-	`PS\d?|PSP|PSV|3DS|NDS|GBA|FC|SFC|FX|N64|DC|SS|Xbox|XBOX|PC\d?` +
-	`[SsTt][Uu][Dd][Ii][Oo]|[Pp]roduction|[Ee]ntertainment|[Pp]ictures|[Mm]usic|[Ww]orks|` +
-	`OP\d?|ED\d?|IN\d?|BGM|OST|OVA|OAD|ONA|TV|BD|DVD|CD|Blu-ray|第\d+` +
-	`Team[- ]|CV\b|NC\b|` +
-	`INC\.?|Inc\.?|Ltd\.?|Co\.|Corp\.|` +
-	`\bS\d|3D|cv\b`,
-)
+var cjkNoiseAnchors = buildCJKNoiseAnchors()
 
-func isNoiseName(name string) bool {
+func buildCJKNoiseAnchors() map[rune][]string {
+	anchors := make(map[rune][]string, len(noiseSubstringsCJK))
 	for _, s := range noiseSubstringsCJK {
-		if strings.Contains(name, s) {
-			return true
-		}
+		r, _ := utf8.DecodeRuneInString(s)
+		anchors[r] = append(anchors[r], s)
 	}
-	// Only run regex for names that contain ASCII letters — most CJK names skip this
-	if containsASCII(name) && noiseEnRe.MatchString(name) {
-		return true
+	return anchors
+}
+
+// hasCJKNoise scans noiseSubstringsCJK anchors by first rune instead of
+// running ~200 strings.Contains passes over the whole name.
+func hasCJKNoise(name string) bool {
+	for i := 0; i < len(name); {
+		r, sz := utf8.DecodeRuneInString(name[i:])
+		if subs := cjkNoiseAnchors[r]; len(subs) > 0 {
+			for _, s := range subs {
+				if len(s) <= len(name)-i && name[i:i+len(s)] == s {
+					return true
+				}
+			}
+		}
+		i += sz
 	}
 	return false
+}
+
+func isNoiseName(name string) bool {
+	if hasCJKNoise(name) {
+		return true
+	}
+	if !containsASCII(name) {
+		return false
+	}
+	return hasASCIINoise(noiseFold(name))
 }
 
 func containsASCII(s string) bool {
@@ -141,6 +143,215 @@ func containsASCII(s string) bool {
 		}
 	}
 	return false
+}
+
+// noiseFold lowercases ASCII letters and folds other casable runes to their
+// orbit's ASCII lowercase, mirroring (?i) literal matching in regexps.
+func noiseFold(name string) string {
+	hasUpper := false
+	hasNonASCII := false
+	for i := 0; i < len(name); i++ {
+		if c := name[i]; c >= utf8.RuneSelf {
+			hasNonASCII = true
+		} else if c >= 'A' && c <= 'Z' {
+			hasUpper = true
+		}
+	}
+	if !hasUpper && !hasNonASCII {
+		return name
+	}
+	return strings.Map(func(r rune) rune {
+		if r >= 'A' && r <= 'Z' {
+			return r + ('a' - 'A')
+		}
+		if r < utf8.RuneSelf {
+			return r
+		}
+		r = foldRuneToASCII(r)
+		return r
+	}, name)
+}
+
+// noiseWordTokens holds the \b-word alternatives of the removed noiseEnRe
+// (case-folded, maximal word runs [0-9A-Za-z_]). `technic?ian` expands to
+// "techniian" and "technician"; `manage[rm]` to "manager" and "managem";
+// unanchored substring alternatives like inc/ltd are covered there instead.
+var noiseWordTokens = map[string]struct{}{
+	"letterer": {}, "colorist": {}, "inker": {}, "penciler": {}, "penciller": {},
+	"translator": {}, "editor": {}, "assistant": {}, "credited": {},
+	"uncredited": {}, "retouch": {}, "techniian": {}, "technician": {},
+	"coordinator": {}, "coordination": {}, "contributor": {}, "collaborator": {},
+	"producer": {}, "supervisor": {}, "supervision": {}, "manager": {},
+	"managem": {}, "planner": {}, "director": {}, "distributor": {},
+	"distribution": {}, "packager": {}, "printer": {}, "binder": {}, "staff": {},
+	"piano": {}, "violin": {}, "guitar": {}, "bass": {}, "drums": {}, "flute": {},
+	"sax": {}, "saxophone": {}, "cello": {}, "harp": {}, "trumpet": {},
+	"trombone": {}, "clarinet": {}, "oboe": {}, "viola": {}, "ukulele": {},
+	"synthesizer": {}, "synthesizs": {}, "keyboard": {}, "drum": {},
+	"recording": {}, "mastering": {}, "remastering": {}, "vocaloid": {},
+	"utau": {}, "artists": {}, "pl": {}, "plc": {}, "pc": {}, "pcc": {},
+	"llc": {}, "gmbh": {}, "corp": {}, "co": {}, "android": {}, "ios": {},
+	"windows": {}, "steam": {}, "switch": {}, "new": {}, "program": {},
+	"programming": {}, "programmer": {}, "design": {}, "designer": {},
+	"writer": {}, "directio": {}, "direction": {}, "effect": {}, "effects": {},
+	"graphic": {}, "graphics": {}, "scenario": {}, "planning": {},
+}
+
+// noiseFoldSubstrings holds the unanchored (substring) alternatives of the
+// removed noiseEnRe, case-folded. Console acronyms like PS/PSP/PSV all contain
+// "ps" (PS\d?), so the optional digits collapse away. The dotted l.t.d forms
+// live in the \b group of the original pattern and are checked separately.
+var noiseFoldSubstrings = []string{
+	"ps", "3ds", "nds", "gba", "fc", "sfc", "fx", "n64", "dc", "ss", "xbox",
+	"production", "entertainment", "pictures", "music", "works",
+	"op", "ed", "in", "bgm", "ost", "ova", "oad", "ona",
+	"tv", "bd", "dvd", "cd", "blu-ray", "3d",
+	"inc", "ltd", "co.", "corp.",
+}
+
+func isNoiseWordChar(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' ||
+		(c >= 'A' && c <= 'Z')
+}
+
+// hasASCIINoise checks the folded name against the removed noiseEnRe:
+// whole-word tokens, unanchored substrings, dotted l.t.d forms, and the
+// special patterns PC\d?[SsTt]udio / 第\d+Team[- ] / CV\b / NC\b / \bS\d.
+func hasASCIINoise(lowered string) bool {
+	for i := 0; i < len(lowered); {
+		c := lowered[i]
+		if isNoiseWordChar(c) {
+			j := i
+			for j < len(lowered) && isNoiseWordChar(lowered[j]) {
+				j++
+			}
+			if _, ok := noiseWordTokens[lowered[i:j]]; ok {
+				return true
+			}
+			i = j
+		} else {
+			i++
+		}
+	}
+	for _, s := range noiseFoldSubstrings {
+		if strings.Contains(lowered, s) {
+			return true
+		}
+	}
+	for _, s := range noiseLtdDotted {
+		if hasBorderWord(lowered, s) {
+			return true
+		}
+	}
+	return hasPCStudioNoise(lowered) || hasDaiTeamNoise(lowered) ||
+		hasBoundaryNoise(lowered)
+}
+
+var noiseLtdDotted = [...]string{"l.td", "lt.d", "l.t.d"}
+
+func hasBorderWord(s, w string) bool {
+	i := 0
+	for {
+		k := strings.Index(s[i:], w)
+		if k < 0 {
+			return false
+		}
+		i += k
+		if hasWordBoundaryBefore(s, i) && hasWordBoundaryAfter(s, i+len(w)) {
+			return true
+		}
+		i++
+	}
+}
+
+func hasPCStudioNoise(lowered string) bool {
+	for i := 0; i+1 < len(lowered); i++ {
+		if lowered[i] != 'p' || lowered[i+1] != 'c' {
+			continue
+		}
+		j := i + 2
+		if j < len(lowered) && lowered[j] >= '0' && lowered[j] <= '9' {
+			j++
+		}
+		if j < len(lowered) && (lowered[j] == 's' || lowered[j] == 't') &&
+			strings.HasPrefix(lowered[j+1:], "udio") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasDaiTeamNoise(lowered string) bool {
+	i := 0
+	for {
+		k := strings.Index(lowered[i:], "第")
+		if k < 0 {
+			return false
+		}
+		i += k
+		j := i + 3
+		for j < len(lowered) && lowered[j] >= '0' && lowered[j] <= '9' {
+			j++
+		}
+		if j > i+3 && strings.HasPrefix(lowered[j:], "team") {
+			l := j + 4
+			if l < len(lowered) && (lowered[l] == '-' || lowered[l] == ' ') {
+				return true
+			}
+		}
+		i += 3
+	}
+}
+
+func hasWordBoundaryBefore(s string, i int) bool {
+	return i == 0 || !isNoiseWordChar(s[i-1])
+}
+
+func hasWordBoundaryAfter(s string, i int) bool {
+	return i == len(s) || !isNoiseWordChar(s[i])
+}
+
+func hasBoundaryNoise(lowered string) bool {
+	for _, tok := range [...]string{"cv", "nc"} {
+		i := 0
+		for {
+			k := strings.Index(lowered[i:], tok)
+			if k < 0 {
+				break
+			}
+			i += k
+			if hasWordBoundaryAfter(lowered, i+len(tok)) {
+				return true
+			}
+			i++
+		}
+	}
+	for i := 0; i+1 < len(lowered); i++ {
+		if lowered[i] == 's' && lowered[i+1] >= '0' && lowered[i+1] <= '9' &&
+			hasWordBoundaryBefore(lowered, i) {
+			return true
+		}
+	}
+	return false
+}
+
+// foldRuneToASCII maps a rune whose simple case-fold orbit contains an ASCII
+// lowercase letter to that letter (e.g. ſ→s, K→k), otherwise it returns the
+// rune unchanged. Regexps match (?i) literals per fold orbit; only ASCII-orbit
+// members matter for the noise patterns, all of which are ASCII.
+func foldRuneToASCII(r rune) rune {
+	x := unicode.SimpleFold(r)
+	if x == r {
+		return r
+	}
+	for y := x; ; y = unicode.SimpleFold(y) {
+		if y >= 'a' && y <= 'z' {
+			return y
+		}
+		if y == x {
+			return r
+		}
+	}
 }
 
 var positionMergeAliases = map[int]int{
@@ -182,21 +393,64 @@ func buildTypePosNameToID() typePosNameToID {
 	result := make(typePosNameToID, len(model.StaffPositions))
 	for t, pos := range model.StaffPositions {
 		pni := make(map[string]int, len(pos))
-		for id, name := range pos {
-			pni[name] = id
+		ids := make([]int, 0, len(pos))
+		for id := range pos {
+			ids = append(ids, id)
+		}
+		sort.Ints(ids)
+		for _, id := range ids {
+			name := pos[id]
+			if _, exists := pni[name]; !exists {
+				pni[name] = id
+			}
 		}
 		result[t] = pni
 	}
 	for id, name := range musicExtraPositions {
-		result[int(model.TypeMusic)][name] = id
+		if _, exists := result[int(model.TypeMusic)][name]; !exists {
+			result[int(model.TypeMusic)][name] = id
+		}
 	}
 	return result
 }
 
-var (
-	isDigitsOnlyRe  = regexp.MustCompile(`^[\d\-./#\s]+$`)
-	hasCJKOrAlphaRe = regexp.MustCompile(`[\p{Han}\p{Hiragana}\p{Katakana}a-zA-Z]`)
-)
+// isDigitsOnly mirrors the removed isDigitsOnlyRe (`^[\d\-./#\s]+$`): every
+// byte must be an ASCII digit, one of -./#, or whitespace.
+func isDigitsOnly(name string) bool {
+	if name == "" {
+		return false
+	}
+	for i := 0; i < len(name); i++ {
+		c := name[i]
+		if c >= '0' && c <= '9' {
+			continue
+		}
+		switch c {
+		case '-', '.', '/', '#', ' ', '\t', '\n', '\f', '\r':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// hasCJKOrAlpha mirrors the removed hasCJKOrAlphaRe (`[\p{Han}\p{Hiragana}\p{Katakana}a-zA-Z]`).
+func hasCJKOrAlpha(name string) bool {
+	for i := 0; i < len(name); {
+		r, sz := utf8.DecodeRuneInString(name[i:])
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			return true
+		}
+		if r >= utf8.RuneSelf {
+			if unicode.Is(unicode.Han, r) || unicode.Is(unicode.Hiragana, r) ||
+				unicode.Is(unicode.Katakana, r) {
+				return true
+			}
+		}
+		i += sz
+	}
+	return false
+}
 
 func normalizePersonName(name string) string {
 	return aliases.Normalize(name)
@@ -260,11 +514,20 @@ func normalizePersonNameVariant(name string) string {
 
 // buildVariantExistingIDs maps each existing-person key to its variant-normalized
 // form, so to-be-created persons can be checked for variant-spelling collisions.
+// Several source keys may collapse into one; their ID lists are merged in
+// ascending-ID order so the result does not depend on map iteration order.
 func buildVariantExistingIDs(knownIDs map[string][]int) map[string][]int {
 	out := make(map[string][]int)
+	merged := make(map[string]bool)
 	for key, ids := range knownIDs {
 		vk := normalizePersonNameVariant(key)
 		out[vk] = append(out[vk], ids...)
+		if len(out[vk]) > 1 && !merged[vk] {
+			merged[vk] = true
+		}
+	}
+	for vk := range merged {
+		sort.Ints(out[vk])
 	}
 	return out
 }
@@ -315,10 +578,10 @@ func isLikelyPerson(name string) bool {
 	if len(name) < 2 {
 		return false
 	}
-	if isDigitsOnlyRe.MatchString(name) {
+	if isDigitsOnly(name) {
 		return false
 	}
-	if !hasCJKOrAlphaRe.MatchString(name) {
+	if !hasCJKOrAlpha(name) {
 		return false
 	}
 	if isNoiseName(name) {

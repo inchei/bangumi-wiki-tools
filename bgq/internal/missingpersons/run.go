@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
 
@@ -79,61 +80,73 @@ func Run(ctx context.Context, opts Options) error {
 	missing, variantDupes = splitVariantDupes(missing, variantExistingIDs, idToRawName)
 	fmt.Fprintf(os.Stderr, "  变体字归一后同名已存在: %d, 剩余实际缺失: %d\n", len(variantDupes), len(missing))
 
-	if len(variantDupes) > 0 {
-		fmt.Fprintf(os.Stderr, "过滤变体同名已关联条目中...\n")
-		beforeVariant := len(variantDupes)
-		var verr error
-		variantDupes, verr = filterAlreadyLinked(ctx, opts.DBPath, variantDupes, true)
-		if verr != nil {
-			fmt.Fprintf(os.Stderr, "错误: %v\n", verr)
-			return verr
-		}
-		fmt.Fprintf(os.Stderr, "  变体同名过滤后: %d → %d (排除已关联 %d)\n", beforeVariant, len(variantDupes), beforeVariant-len(variantDupes))
-	}
-
 	var relatedBare []*missingRelatedPerson
-	if len(related) > 0 {
-		fmt.Fprintf(os.Stderr, "过滤已关联人物中...\n")
-		beforeFilter := len(related)
-		var ferr error
-		related, ferr = filterAlreadyLinked(ctx, opts.DBPath, related, false)
-		if ferr != nil {
-			fmt.Fprintf(os.Stderr, "错误: %v\n", ferr)
-			return ferr
+	if len(variantDupes) > 0 || len(related) > 0 {
+		// One linked-index query covers the variant list and the related list,
+		// and the 无关联 query runs concurrently (the DuckDB CLI startup
+		// dominates both queries, so overlapping them hides it).
+		personIDs := filterPersonIDs(variantDupes, related)
+		var noRel map[int]bool
+		var rerr, nerr error
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			noRel, nerr = loadNoRelationPersonIDs(ctx, opts.DBPath)
+		}()
+		var li linkedIndex
+		li, rerr = buildLinkedIndex(ctx, opts.DBPath, personIDs)
+		wg.Wait()
+		if nerr != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", nerr)
+			return nerr
 		}
-		fmt.Fprintf(os.Stderr, "  关联缺失过滤后: %d → %d (移除已关联 %d)\n", beforeFilter, len(related), beforeFilter-len(related))
-		fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", time.Since(t3).Seconds())
+		if rerr != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", rerr)
+			return rerr
+		}
 
-		fmt.Fprintf(os.Stderr, "区分无关联人物中...\n")
-		noRel, err := loadNoRelationPersonIDs(ctx, opts.DBPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "错误: %v\n", err)
-			return err
+		if len(variantDupes) > 0 {
+			fmt.Fprintf(os.Stderr, "过滤变体同名已关联条目中...\n")
+			beforeVariant := len(variantDupes)
+			variantDupes = filterLinkedInto(variantDupes, li, true)
+			fmt.Fprintf(os.Stderr, "  变体同名过滤后: %d → %d (排除已关联 %d)\n", beforeVariant, len(variantDupes), beforeVariant-len(variantDupes))
 		}
-		relatedBare = make([]*missingRelatedPerson, 0, len(related))
-		normal := related[:0]
-		for _, rp := range related {
-			isBare := false
-			for _, p := range rp.ExistingPersonIDs {
-				if noRel[p.ID] {
-					isBare = true
-					break
+
+		if len(related) > 0 {
+			fmt.Fprintf(os.Stderr, "过滤已关联人物中...\n")
+			beforeFilter := len(related)
+			related = filterLinkedInto(related, li, false)
+			fmt.Fprintf(os.Stderr, "  关联缺失过滤后: %d → %d (移除已关联 %d)\n", beforeFilter, len(related), beforeFilter-len(related))
+			fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", time.Since(t3).Seconds())
+
+			fmt.Fprintf(os.Stderr, "区分无关联人物中...\n")
+			relatedBare = make([]*missingRelatedPerson, 0, len(related))
+			normal := related[:0]
+			for _, rp := range related {
+				isBare := false
+				for _, p := range rp.ExistingPersonIDs {
+					if noRel[p.ID] {
+						isBare = true
+						break
+					}
+				}
+				if isBare {
+					relatedBare = append(relatedBare, rp)
+				} else {
+					normal = append(normal, rp)
 				}
 			}
-			if isBare {
-				relatedBare = append(relatedBare, rp)
-			} else {
-				normal = append(normal, rp)
-			}
+			related = normal
+			fmt.Fprintf(os.Stderr, "  其中无关联人物: %d, 其余关联缺失: %d\n", len(relatedBare), len(related))
 		}
-		related = normal
-		fmt.Fprintf(os.Stderr, "  其中无关联人物: %d, 其余关联缺失: %d\n", len(relatedBare), len(related))
 	}
 
 	totalMissing := len(missing)
 	totalRelated := len(related)
 	totalBare := len(relatedBare)
 	totalVariant := len(variantDupes)
+
 	fmt.Fprintf(os.Stderr, "  缺失且 ≥%d 次出现的人数: %d\n", missingPersonsMinCount, totalMissing)
 	fmt.Fprintf(os.Stderr, "  关联缺失且 ≥%d 次出现的人数: %d (其中无关联 %d)\n", missingRelatedMinCount, totalRelated, totalBare)
 	fmt.Fprintf(os.Stderr, "  变体字同名且已存在的人数: %d\n", totalVariant)

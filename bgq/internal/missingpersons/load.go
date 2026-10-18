@@ -88,8 +88,9 @@ func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string
 				idToName[p.ID] = display
 			}
 		}
+		cn := extractPersonCNName(p.Infobox)
 		// Also match by CN name from infobox
-		if cn := extractPersonCNName(p.Infobox); cn != "" && cn != p.Name {
+		if cn != "" && cn != p.Name {
 			normCN := normalizePersonName(cn)
 			if normCN != normalizePersonName(p.Name) {
 				known[normCN] = true

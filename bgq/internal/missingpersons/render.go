@@ -8,9 +8,11 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -336,6 +338,61 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 
 const chunkSize = 2000
 
+// pageJob is one renderable HTML page: the closure writes the page and returns
+// its search rows plus the exact progress line the sequential version printed.
+type pageJob struct {
+	run func() ([]searchItem, string, error)
+}
+
+type pageResult struct {
+	items []searchItem
+	log   string
+	err   error
+}
+
+func runPageJobs(jobs []pageJob) ([]searchItem, error) {
+	if len(jobs) == 0 {
+		return nil, nil
+	}
+	results := make([]pageResult, len(jobs))
+	workCh := make(chan int, len(jobs))
+	for i := range jobs {
+		workCh <- i
+	}
+	close(workCh)
+
+	workers := runtime.GOMAXPROCS(0)
+	if workers > len(jobs) {
+		workers = len(jobs)
+	}
+	if workers > 6 {
+		workers = 6
+	}
+	var wg sync.WaitGroup
+	for w := 0; w < workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for i := range workCh {
+				items, log, err := jobs[i].run()
+				results[i] = pageResult{items: items, log: log, err: err}
+			}
+		}()
+	}
+	wg.Wait()
+
+	var searchItems []searchItem
+	for i, res := range results {
+		if res.err != nil {
+			return nil, fmt.Errorf("生成页面失败: %w", res.err)
+		}
+		searchItems = append(searchItems, res.items...)
+		fmt.Fprint(os.Stderr, res.log)
+		_ = i
+	}
+	return searchItems, nil
+}
+
 func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variantDupes []*missingRelatedPerson, outputDir string, subjCount int) error {
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("创建输出目录失败: %w", err)
@@ -375,10 +432,11 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 	}
 
 	var missingLinks, relatedLinks, bareLinks, variantLinks []typeLinkTplData
-	var searchItems []searchItem
+	var jobs []pageJob
 
 	// Missing persons pages
 	for _, t := range sortedTypesByCountLens(typeMissing) {
+		t := t
 		people := typeMissing[t]
 		tname := subjectTypeNames[t]
 		totalType := len(people)
@@ -389,6 +447,7 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 
 		var partLinks []partLinkTplData
 		for partNum := 1; partNum <= totalParts; partNum++ {
+			partNum := partNum
 			start := (partNum - 1) * chunkSize
 			end := start + chunkSize
 			if end > totalType {
@@ -396,20 +455,22 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 			}
 			chunk := people[start:end]
 
-			if err := writeMissingPage(outputDir, tname, t, chunk, partNum, totalParts, genTS); err != nil {
-				return err
-			}
-
 			var fname string
 			if totalParts == 1 {
 				fname = fmt.Sprintf("type-%d", t)
 			} else {
 				fname = fmt.Sprintf("type-%d-part-%d", t, partNum)
 			}
-			for _, mp := range chunk {
-				searchItems = append(searchItems, missingSearchItem(mp, fname+".html?v="+genTS))
-			}
-			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (缺失:%d)\n", tname, outputDir, fname, len(chunk))
+			jobs = append(jobs, pageJob{run: func() ([]searchItem, string, error) {
+				if err := writeMissingPage(outputDir, tname, t, chunk, partNum, totalParts, genTS); err != nil {
+					return nil, "", err
+				}
+				items := make([]searchItem, 0, len(chunk))
+				for _, mp := range chunk {
+					items = append(items, missingSearchItem(mp, fname+".html?v="+genTS))
+				}
+				return items, fmt.Sprintf("  [%s] %s/%s.html (缺失:%d)\n", tname, outputDir, fname, len(chunk)), nil
+			}})
 			label := "浏览"
 			if totalParts > 1 {
 				label = fmt.Sprintf("第%d页", partNum)
@@ -420,20 +481,22 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 	}
 
 	// Related persons pages
-	relatedLinks, err := buildRelatedTypeLinks(outputDir, typeRelated, "related", "关联缺失", "关联缺失", &searchItems, genTS)
-	if err != nil {
-		return err
-	}
+	relatedJobs, relatedLinkData := relatedPageJobs(outputDir, typeRelated, "related", "关联缺失", "关联缺失", genTS)
+	jobs = append(jobs, relatedJobs...)
+	relatedLinks = relatedLinkData
 
 	// No-relation (无关联) related persons pages
-	bareLinks, err = buildRelatedTypeLinks(outputDir, typeBare, "related-bare", "无关联", "无关联关联缺失", &searchItems, genTS)
-	if err != nil {
-		return err
-	}
+	bareJobs, bareLinkData := relatedPageJobs(outputDir, typeBare, "related-bare", "无关联", "无关联关联缺失", genTS)
+	jobs = append(jobs, bareJobs...)
+	bareLinks = bareLinkData
 
 	// Variant-spelling same-name (变体同名) pages — to-be-created persons whose
 	// variant-normalized name matches an existing person, listed at the end.
-	variantLinks, err = buildRelatedTypeLinks(outputDir, typeVariant, "variant", "变体同名", "变体同名", &searchItems, genTS)
+	variantJobs, variantLinkData := relatedPageJobs(outputDir, typeVariant, "variant", "变体同名", "变体同名", genTS)
+	jobs = append(jobs, variantJobs...)
+	variantLinks = variantLinkData
+
+	searchItems, err := runPageJobs(jobs)
 	if err != nil {
 		return err
 	}
@@ -448,13 +511,14 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 	return writeSearchPage(outputDir, mergeSearchItems(searchItems))
 }
 
-// buildRelatedTypeLinks renders related-person pages (one per subject type,
-// chunked) and returns the per-type directory links. suffix is used in page
-// filenames (e.g. "related" → type-1-related.html), linkLabel is the text on
-// each type link, and logLabel is used in progress output.
-func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPerson, suffix, linkLabel, logLabel string, searchItems *[]searchItem, genTS string) ([]typeLinkTplData, error) {
+// relatedPageJobs enumerates the per-type page jobs (and directory links) for
+// one related-family list, preserving the exact enumeration and log order of
+// the previous sequential buildRelatedTypeLinks.
+func relatedPageJobs(outputDir string, typeMap map[int][]*missingRelatedPerson, suffix, linkLabel, logLabel string, genTS string) ([]pageJob, []typeLinkTplData) {
+	var jobs []pageJob
 	var links []typeLinkTplData
 	for _, t := range sortedTypesByCountLens(typeMap) {
+		t := t
 		people := typeMap[t]
 		tname := subjectTypeNames[t]
 		totalType := len(people)
@@ -465,6 +529,7 @@ func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPe
 
 		var partLinks []partLinkTplData
 		for partNum := 1; partNum <= totalParts; partNum++ {
+			partNum := partNum
 			start := (partNum - 1) * chunkSize
 			end := start + chunkSize
 			if end > totalType {
@@ -472,20 +537,22 @@ func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPe
 			}
 			chunk := people[start:end]
 
-			if err := writeRelatedPage(outputDir, tname, t, chunk, partNum, totalParts, suffix, genTS); err != nil {
-				return nil, err
-			}
-
 			var fname string
 			if totalParts == 1 {
 				fname = fmt.Sprintf("type-%d-%s", t, suffix)
 			} else {
 				fname = fmt.Sprintf("type-%d-%s-part-%d", t, suffix, partNum)
 			}
-			for _, rp := range chunk {
-				*searchItems = append(*searchItems, relatedSearchItem(rp, fname+".html?v="+genTS))
-			}
-			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (%s:%d)\n", tname, outputDir, fname, logLabel, len(chunk))
+			jobs = append(jobs, pageJob{run: func() ([]searchItem, string, error) {
+				if err := writeRelatedPage(outputDir, tname, t, chunk, partNum, totalParts, suffix, genTS); err != nil {
+					return nil, "", err
+				}
+				items := make([]searchItem, 0, len(chunk))
+				for _, rp := range chunk {
+					items = append(items, relatedSearchItem(rp, fname+".html?v="+genTS))
+				}
+				return items, fmt.Sprintf("  [%s] %s/%s.html (%s:%d)\n", tname, outputDir, fname, logLabel, len(chunk)), nil
+			}})
 			label := "浏览"
 			if totalParts > 1 {
 				label = fmt.Sprintf("第%d页", partNum)
@@ -494,7 +561,7 @@ func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPe
 		}
 		links = append(links, typeLinkTplData{TypeName: tname + linkLabel, Count: totalType, Parts: partLinks})
 	}
-	return links, nil
+	return jobs, links
 }
 
 func sortedTypesByCountLens[T any](typeMap map[int][]T) []int {

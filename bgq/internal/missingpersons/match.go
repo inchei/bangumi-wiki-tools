@@ -6,12 +6,21 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 const missingPersonsMinCount = 2
 
+// nameInfo caches the isLikelyPerson verdict and normalized form of a raw
+// person-name token; normalizePersonName (NFKC) dominates otherwise.
+type nameInfo struct {
+	likely bool
+	norm   string
+}
+
 func parseSubjects(records []subjectRecord) map[string]*missingPerson {
-	personSubjects := make(map[string]*missingPerson)
+	personSubjects := make(map[string]*missingPerson, 1<<20)
+	cache := make(map[string]nameInfo, 1<<19)
 	total := len(records)
 	lastLog := time.Now()
 
@@ -26,12 +35,12 @@ func parseSubjects(records []subjectRecord) map[string]*missingPerson {
 			continue
 		}
 
-		addPersonNames(subj, pni, personSubjects)
+		addPersonNames(subj, pni, personSubjects, cache)
 	}
 	return personSubjects
 }
 
-func addPersonNames(subj subjectRecord, pni map[string]int, personSubjects map[string]*missingPerson) {
+func addPersonNames(subj subjectRecord, pni map[string]int, personSubjects map[string]*missingPerson, cache map[string]nameInfo) {
 	infobox := subj.Infobox
 	skey := fmt.Sprintf("%d:%d", subj.Type, subj.ID)
 
@@ -68,21 +77,48 @@ func addPersonNames(subj subjectRecord, pni map[string]int, personSubjects map[s
 		}
 		value = strings.TrimSpace(value)
 
-		for _, name := range strings.FieldsFunc(value, isDelim) {
-			name = strings.TrimSpace(name)
-			if !isLikelyPerson(name) {
+		// Manual FieldsFunc(value, isDelim) tokenization so each delimiter-rune
+		// run yields a subslice token; allocation only happens later for
+		// cache-key insertion and normalization.
+		i, n := 0, len(value)
+		for i < n {
+			r, sz := utf8.DecodeRuneInString(value[i:])
+			if isDelim(r) {
+				i += sz
 				continue
 			}
-			keyNorm := normalizePersonName(name)
-			entry := personSubjects[keyNorm]
+			tokStart := i
+			for i < n {
+				r, sz := utf8.DecodeRuneInString(value[i:])
+				if isDelim(r) {
+					break
+				}
+				i += sz
+			}
+			name := strings.TrimSpace(value[tokStart:i])
+			if len(name) < 2 {
+				continue
+			}
+			info, ok := cache[name]
+			if !ok {
+				info = nameInfo{likely: isLikelyPerson(name)}
+				if info.likely {
+					info.norm = normalizePersonName(name)
+				}
+				cache[name] = info
+			}
+			if !info.likely {
+				continue
+			}
+			entry := personSubjects[info.norm]
 			if entry == nil {
 				entry = &missingPerson{
 					DisplayName: name,
-					KeyNorm:     keyNorm,
+					KeyNorm:     info.norm,
 					Subjects:    make(map[string]*subjectInfo),
 					TypeCounts:  make(map[int]int),
 				}
-				personSubjects[keyNorm] = entry
+				personSubjects[info.norm] = entry
 			}
 			if si, ok := entry.Subjects[skey]; ok {
 				si.PosIDs[posID] = struct{}{}

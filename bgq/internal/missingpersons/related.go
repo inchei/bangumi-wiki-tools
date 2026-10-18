@@ -51,30 +51,53 @@ func collectRelated(personSubjects map[string]*missingPerson, existing map[strin
 	return related
 }
 
-func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson, keepEmpty bool) ([]*missingRelatedPerson, error) {
-	if len(related) == 0 {
-		return related, nil
-	}
+// linkedIndex packs (personID, subjectID) into one uint64 key whose value is
+// the list of positions the person holds in the subject — one hash lookup per
+// pair instead of three nested map lookups.
+type linkedIndex map[uint64][]int
 
-	personIDSet := make(map[int]bool)
-	for _, rp := range related {
-		for _, p := range rp.ExistingPersonIDs {
-			personIDSet[p.ID] = true
+func linkedKey(pid, sid int) uint64 {
+	return uint64(uint32(pid))<<32 | uint64(uint32(sid))
+}
+
+func (li linkedIndex) has(pid, sid, pos int) bool {
+	for _, p := range li[linkedKey(pid, sid)] {
+		if p == pos {
+			return true
 		}
 	}
+	return false
+}
 
-	if len(personIDSet) == 0 {
-		return related, nil
+// filterPersonIDs collects the union of existing person IDs across the result
+// lists so the linked-index query runs once for all of them.
+func filterPersonIDs(lists ...[]*missingRelatedPerson) []int {
+	seen := make(map[int]bool)
+	var ids []int
+	for _, list := range lists {
+		for _, rp := range list {
+			for _, p := range rp.ExistingPersonIDs {
+				if !seen[p.ID] {
+					seen[p.ID] = true
+					ids = append(ids, p.ID)
+				}
+			}
+		}
+	}
+	return ids
+}
+
+func buildLinkedIndex(ctx context.Context, dbPath string, personIDs []int) (linkedIndex, error) {
+	if len(personIDs) == 0 {
+		return nil, nil
 	}
 
 	var idList strings.Builder
-	first := true
-	for pid := range personIDSet {
-		if !first {
+	for i, pid := range personIDs {
+		if i > 0 {
 			idList.WriteString(",")
 		}
 		fmt.Fprintf(&idList, "%d", pid)
-		first = false
 	}
 
 	sql := fmt.Sprintf(`
@@ -89,8 +112,7 @@ WHERE sp.person_id IN (%s)
 		return nil, fmt.Errorf("查询已关联数据失败（数据库是否缺少 subject_persons 表？请使用 bgq ingest 建库）: %w", err)
 	}
 
-	// linkedMap: personID -> subjectID -> set of positionIDs
-	linkedMap := make(map[int]map[int]map[int]bool)
+	li := make(linkedIndex, result.TotalRows)
 	for _, row := range result.Rows {
 		if len(row) < 3 {
 			continue
@@ -99,25 +121,26 @@ WHERE sp.person_id IN (%s)
 		sid, _ := strconv.Atoi(row[0])
 		pos, _ := strconv.Atoi(row[2])
 		pos = canonicalPosID(pos)
-		if linkedMap[pid] == nil {
-			linkedMap[pid] = make(map[int]map[int]bool)
-		}
-		if linkedMap[pid][sid] == nil {
-			linkedMap[pid][sid] = make(map[int]bool)
-		}
-		linkedMap[pid][sid][pos] = true
+		key := linkedKey(pid, sid)
+		li[key] = append(li[key], pos)
 	}
+	return li, nil
+}
 
-	filtered := make([]*missingRelatedPerson, 0, len(related))
-	for _, rp := range related {
+func filterLinkedInto(list []*missingRelatedPerson, li linkedIndex, keepEmpty bool) []*missingRelatedPerson {
+	if len(list) == 0 {
+		return list
+	}
+	filtered := make([]*missingRelatedPerson, 0, len(list))
+	for _, rp := range list {
 		newSubjects := make(map[string]*subjectInfo)
 		for skey, si := range rp.Subjects {
 			sid := parseSubjectID(skey)
-			newPosIDs := make(map[int]struct{})
+			newPosIDs := make(map[int]struct{}, len(si.PosIDs))
 			for pos := range si.PosIDs {
 				isLinked := false
 				for _, p := range rp.ExistingPersonIDs {
-					if linkedMap[p.ID] != nil && linkedMap[p.ID][sid] != nil && linkedMap[p.ID][sid][pos] {
+					if li.has(p.ID, sid, pos) {
 						isLinked = true
 						break
 					}
@@ -160,7 +183,7 @@ WHERE sp.person_id IN (%s)
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].Count > filtered[j].Count
 	})
-	return filtered, nil
+	return filtered
 }
 
 func parseSubjectID(skey string) int {
