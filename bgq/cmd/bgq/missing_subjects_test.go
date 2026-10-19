@@ -164,11 +164,11 @@ func TestBuildCheckSQL_FinalSelectShape(t *testing.T) {
 	positions := map[int]string{1: "原作"}
 	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
-	if !strings.Contains(sql, "SELECT s.id, s.name, pm.id") {
-		t.Error("final SELECT should project (s.id, s.name, pm.id)")
+	if !strings.Contains(sql, "SELECT pairs.subject_id, pairs.subject_name, pm.id") {
+		t.Error("final SELECT should project (pairs.subject_id, pairs.subject_name, pm.id)")
 	}
-	if !strings.Contains(sql, "JOIN pairs ON pairs.subject_id = s.id") {
-		t.Error("final SELECT should join pairs on subject_id")
+	if strings.Contains(sql, "FROM subjects s\nJOIN pairs") {
+		t.Error("final SELECT should not re-join subjects (pairs carries the name)")
 	}
 	if !strings.Contains(sql, "JOIN positions_map pm ON pm.name = pairs.k") {
 		t.Error("final SELECT should join positions_map on name = pairs.k")
@@ -176,8 +176,30 @@ func TestBuildCheckSQL_FinalSelectShape(t *testing.T) {
 	if !strings.Contains(sql, "NOT EXISTS (SELECT 1 FROM linked l") {
 		t.Error("final SELECT should anti-join linked via NOT EXISTS")
 	}
-	if !strings.Contains(sql, "ORDER BY s.id, pm.id") {
-		t.Error("final SELECT should order by (s.id, pm.id) for stable output")
+	if !strings.Contains(sql, "ORDER BY pairs.subject_id, pm.id") {
+		t.Error("final SELECT should order by (subject_id, pm.id) for stable output")
+	}
+}
+
+func TestBuildCheckSQL_NamePrefilter(t *testing.T) {
+	positions := map[int]string{1: "原作"}
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
+
+	if !strings.Contains(sql, "regexp_matches(REPLACE(REPLACE(s.infobox, '　', ''), ' ', ''), '(?i)川原砾')") {
+		t.Error("pairs CTE should prefilter subjects by case-insensitive literal name match")
+	}
+
+	// ASCII case must be covered: the prefilter literal is case-insensitive,
+	// regex-escaped, and built from the space-stripped name
+	sql = buildCheckSQL(4, "George Wada", positions, 0)
+	if !strings.Contains(sql, `(?i)GeorgeWada`) {
+		t.Error("prefilter literal should be regex-escaped, space-stripped, case-insensitive")
+	}
+
+	// A name made only of whitespace cannot prefilter anything
+	empty := strings.Contains(buildCheckSQL(2, " ", positions, 0), "regexp_matches(REPLACE(REPLACE(s.infobox")
+	if empty {
+		t.Error("blank name should skip the prefilter")
 	}
 }
 

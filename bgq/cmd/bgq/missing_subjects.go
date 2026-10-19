@@ -117,6 +117,20 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string, ta
 		"'", "''",
 	)
 
+	// Case-insensitive substring prefilter over the space-stripped infobox is
+	// a strict superset of the delimited name match below: any pair value that
+	// can hit snamePattern must contain the clean name, and the pair value is
+	// a substring of the infobox. Must stay case-insensitive to cover ASCII
+	// case variants the final pattern accepts.
+	var prefilter string
+	if cleanName != "" {
+		prefilterPattern := strings.ReplaceAll(`(?i)`+regexp.QuoteMeta(cleanName), "'", "''")
+		prefilter = fmt.Sprintf(
+			"\n    AND regexp_matches(REPLACE(REPLACE(s.infobox, '　', ''), ' ', ''), '%s')",
+			prefilterPattern,
+		)
+	}
+
 	posIDs := sortedKeys(positions)
 	hasSeries := typeCode == 1
 
@@ -180,27 +194,27 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string, ta
 	// versions).
 	fmt.Fprintf(&sb, `%spairs AS (
   SELECT s.id AS subject_id,
+         s.name AS subject_name,
          UNNEST(regexp_extract_all(s.infobox, '%s', 1)) AS k,
          UNNEST(regexp_extract_all(s.infobox, '%s', 2)) AS v
   FROM subjects s
-  WHERE s.type = %d
+  WHERE s.type = %d%s
 %s
 )
-`, withPrefix(cteCount), infoboxPatternSQL, infoboxPatternSQL, typeCode,
+`, withPrefix(cteCount), infoboxPatternSQL, infoboxPatternSQL, typeCode, prefilter,
 		indentSeriesFilter(hasSeries))
 
 	// Final SELECT: subjects whose infobox value for a position key mentions
 	// the person (with delimiter boundaries), but no linked staff entry
 	// exists for that (subject, position).
-	sb.WriteString(`SELECT s.id, s.name, pm.id
-FROM subjects s
-JOIN pairs ON pairs.subject_id = s.id
+	sb.WriteString(`SELECT pairs.subject_id, pairs.subject_name, pm.id
+FROM pairs
 JOIN positions_map pm ON pm.name = pairs.k
 WHERE regexp_matches(REPLACE(REPLACE(pairs.v, '　', ''), ' ', ''), '`)
 	sb.WriteString(snamePattern)
 	sb.WriteString(`')
-  AND NOT EXISTS (SELECT 1 FROM linked l WHERE l.subject_id = s.id AND l.position = pm.id)
-ORDER BY s.id, pm.id;`)
+  AND NOT EXISTS (SELECT 1 FROM linked l WHERE l.subject_id = pairs.subject_id AND l.position = pm.id)
+ORDER BY pairs.subject_id, pm.id;`)
 
 	return sb.String()
 }
