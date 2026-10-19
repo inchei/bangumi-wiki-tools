@@ -442,13 +442,20 @@ a:hover {
 }
 
 /* ===== Drag & drop ===== */
-body.dnd-active {
+body.dnd-active,
+body.splitter-dragging {
   cursor: grabbing;
   user-select: none;
 }
 
+body.splitter-dragging {
+  cursor: col-resize;
+}
+
 body.dnd-selecting,
-body.dnd-selecting * {
+body.dnd-selecting *,
+body.splitter-dragging,
+body.splitter-dragging * {
   -webkit-user-select: none !important;
   -webkit-touch-callout: none;
   user-select: none !important;

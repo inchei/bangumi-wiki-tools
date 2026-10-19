@@ -35,8 +35,38 @@
   import ResultTable from "./components/ResultTable.svelte";
   import YamlEditor from "./components/YamlEditor.svelte";
   import QuerySettings from "./components/QuerySettings.svelte";
+  import PanelSplitter from "./components/PanelSplitter.svelte";
 
   let themeMode = $state("system");
+
+  const SPLIT_DEFAULT = 420;
+  const STORE_LEFT_WIDTH = "panelLeftWidth";
+  let leftWidth = $state(initLeftWidth());
+
+  function initLeftWidth() {
+    try {
+      const stored = Number(localStorage.getItem(STORE_LEFT_WIDTH));
+      if (Number.isFinite(stored) && stored >= 280 && stored <= 5000) {
+        return stored;
+      }
+    } catch {
+      /* storage unavailable */
+    }
+    return SPLIT_DEFAULT;
+  }
+
+  $effect(() => {
+    const apply = () => {
+      const max = Math.max(280, Math.floor(window.innerWidth * 0.5));
+      document.documentElement.style.setProperty(
+        "--panel-left-w",
+        `${Math.min(Math.round(leftWidth), max)}px`,
+      );
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  });
 
   // Sprite logo: horizontal strip, only X changes
   const spriteCols = 7;
@@ -312,6 +342,8 @@
     <YamlEditor />
   </div>
 
+  <PanelSplitter bind:width={leftWidth} />
+
   <!-- Right Panel -->
   <div class="panel panel-right">
     <ResultTable />
@@ -390,10 +422,9 @@
   }
 
   :global(.panel-left) {
-    width: 420px;
-    min-width: 420px;
+    width: var(--panel-left-w, 420px);
+    min-width: 280px;
     background: var(--white);
-    border-right: 1px solid var(--border);
     padding: 20px 15px;
     padding-left: max(15px, env(safe-area-inset-left));
     padding-right: max(15px, env(safe-area-inset-right));
@@ -450,6 +481,7 @@
       min-width: 100%;
       max-height: none;
       overflow-y: visible;
+      border-right: 1px solid var(--border);
     }
 
     :global(.panel-right) {
@@ -472,6 +504,7 @@
       max-width: none;
       flex: none;
       overflow-y: auto;
+      border-right: 1px solid var(--border);
     }
 
     :global(.panel-right) {
@@ -499,6 +532,7 @@
       max-height: none;
       height: calc(env(viewport-segment-height 0 0, 50vh) - var(--header-h));
       overflow-y: auto;
+      border-right: 1px solid var(--border);
     }
 
     :global(.panel-right) {
