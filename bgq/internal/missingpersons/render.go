@@ -82,7 +82,11 @@ func subjectDataMap(subjects map[string]*subjectInfo) map[string]subData {
 func posTableJS() template.JS {
 	var parts []string
 	for _, id := range allPosIDs {
-		name := strings.ReplaceAll(strings.ReplaceAll(allPosIDToName[id], `\`, `\\`), `"`, `\"`)
+		name := posDisplayNames[id]
+		if name == "" {
+			name = allPosIDToName[id]
+		}
+		name = strings.ReplaceAll(strings.ReplaceAll(name, `\`, `\\`), `"`, `\"`)
 		parts = append(parts, fmt.Sprintf(`%d:"%s"`, id, name))
 	}
 	return template.JS(strings.Join(parts, ","))

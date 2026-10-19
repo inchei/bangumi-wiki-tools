@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -11,18 +12,6 @@ import (
 	"github.com/inchei/bangumi-query/internal/aliases"
 	"github.com/inchei/bangumi-query/internal/model"
 )
-
-var musicExtraPositions = map[int]string{
-	30:   "主题歌编曲",
-	31:   "主题歌作曲",
-	32:   "主题歌作词",
-	33:   "主题歌演出",
-	34:   "插入歌演出",
-	118:  "插入歌作词",
-	119:  "插入歌作曲",
-	120:  "插入歌编曲",
-	4015: "主题歌演出",
-}
 
 var subjectTypeNames = map[int]string{1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元"}
 
@@ -355,7 +344,10 @@ func foldRuneToASCII(r rune) rune {
 }
 
 var positionMergeAliases = map[int]int{
+	// 23 awaits an upstream merge; 62 shares the cn name 制作助理 with 24 —
+	// normalize same-table same-name classes to the smallest id.
 	23: 53,
+	62: 24,
 }
 
 func canonicalPosID(pos int) int {
@@ -406,9 +398,41 @@ func buildTypePosNameToID() typePosNameToID {
 		}
 		result[t] = pni
 	}
-	for id, name := range musicExtraPositions {
-		if _, exists := result[int(model.TypeMusic)][name]; !exists {
-			result[int(model.TypeMusic)][name] = id
+	return result
+}
+
+var posDisplayNames = buildPosDisplayNames()
+
+// buildPosDisplayNames annotates names claimed by several positions in one
+// type table (e.g. anime 制作助理 = 24/62), keyed by the smallest (resolved) id.
+func buildPosDisplayNames() map[int]string {
+	result := make(map[int]string)
+	types := make([]int, 0, len(model.StaffPositions))
+	for t := range model.StaffPositions {
+		types = append(types, t)
+	}
+	sort.Ints(types)
+	for _, t := range types {
+		pos := model.StaffPositions[t]
+		byName := make(map[string][]int)
+		ids := make([]int, 0, len(pos))
+		for id := range pos {
+			ids = append(ids, id)
+		}
+		sort.Ints(ids)
+		for _, id := range ids {
+			name := pos[id]
+			byName[name] = append(byName[name], id)
+		}
+		for name, group := range byName {
+			if len(group) < 2 {
+				continue
+			}
+			idStrs := make([]string, len(group))
+			for i, id := range group {
+				idStrs[i] = strconv.Itoa(id)
+			}
+			result[group[0]] = name + "(" + strings.Join(idStrs, "/") + ")"
 		}
 	}
 	return result
