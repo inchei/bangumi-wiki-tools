@@ -266,16 +266,18 @@
     </span>
   </div>
   {#if expanded}
-    <textarea
-      class="yaml-editor"
-      bind:this={taEl}
-      bind:value={yamlText}
-      oninput={() => (dirty = true)}
-      onkeydown={handleKeyDown}
-      spellcheck="false"
-      autocapitalize="off"
-      autocorrect="off"
-      placeholder="在此编辑 YAML 配置..."></textarea>
+    <div class="yaml-editor-wrap">
+      <textarea
+        class="yaml-editor"
+        bind:this={taEl}
+        bind:value={yamlText}
+        oninput={() => (dirty = true)}
+        onkeydown={handleKeyDown}
+        spellcheck="false"
+        autocapitalize="off"
+        autocorrect="off"
+        placeholder="在此编辑 YAML 配置..."></textarea>
+    </div>
     <div class="yaml-actions">
       <div class="yaml-actions-left">
         <button class="btn btn-primary btn-sm" onclick={handleApply}>
@@ -311,25 +313,35 @@
     align-items: center;
   }
 
+  /* Outer panel owns the rounded corners and clips the scrolling textarea,
+     so the scrollbar track never paints over the corners. */
+  .yaml-editor-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xs);
+    background: var(--white);
+    overflow: hidden;
+  }
+
+  .yaml-editor-wrap:focus-within {
+    border-color: var(--accent-strong);
+    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
+  }
+
   .yaml-editor {
+    display: block;
     width: 100%;
     min-height: 200px;
     font-family: var(--font-mono);
     font-size: 0.75rem;
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xs);
+    padding: 11px;
+    border: none;
+    border-radius: 0;
     resize: vertical;
     outline: none;
-    background: var(--white);
+    background: transparent;
     color: var(--text);
     line-height: 1.6;
     tab-size: 2;
-  }
-
-  .yaml-editor:focus {
-    border-color: var(--accent-strong);
-    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
   }
 
   /* iOS Safari auto-zooms on focus when form text < 16px: phones only */
