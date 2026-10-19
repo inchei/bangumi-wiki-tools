@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/inchei/bangumi-query/internal/config"
@@ -24,8 +25,10 @@ import (
 type server struct {
 	dataDir      string
 	dbPath       string
-	aliases      *aliasData
+	aliases      atomic.Pointer[aliasData]
 	aliasesFile  string
+	aliasesBusy  atomic.Bool
+	aliasesTryAt atomic.Int64
 	allowedHosts []string
 }
 
@@ -66,10 +69,10 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts [
 	}
 
 	if aliasesFile != "" {
-		var err error
-		s.aliases, err = loadAliasesFile(aliasesFile)
-		if err != nil {
+		if ad, err := loadAliasesFile(aliasesFile); err != nil {
 			fmt.Printf("⚠ 警告: 加载别名文件失败: %v\n", err)
+		} else {
+			s.aliases.Store(ad)
 		}
 	}
 
@@ -110,7 +113,7 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts [
 	}
 	fmt.Println()
 	if aliasesFile != "" {
-		aliasesOK := s.aliases != nil
+		aliasesOK := s.aliases.Load() != nil
 		fmt.Printf("  Aliases:  %s", aliasesFile)
 		if !aliasesOK {
 			fmt.Printf("  ⚠ 加载失败")
@@ -271,8 +274,8 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
 	var aliasesMtime time.Time
-	if s.aliases != nil {
-		aliasesMtime = s.aliases.ModTime
+	if ad := s.aliases.Load(); ad != nil {
+		aliasesMtime = ad.ModTime
 	}
 	resp := map[string]interface{}{
 		"duckdb_mtime":  formatMtime(modTime(query.GetDuckDBPath())),

@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
+	"time"
 
 	"github.com/inchei/bangumi-query/internal/aliases"
 )
@@ -13,7 +13,7 @@ type personAliasEntry = aliases.Entry
 
 type aliasData = aliases.Data
 
-var aliasesReloadMu sync.RWMutex
+const aliasesRetryMillis int64 = 1000
 
 func loadAliasesFile(path string) (*aliasData, error) {
 	return aliases.Load(path)
@@ -27,33 +27,37 @@ func (s *server) reloadAliasesIfStale() {
 	if s.aliasesFile == "" {
 		return
 	}
-	aliasesReloadMu.RLock()
-	cur := s.aliases
-	aliasesReloadMu.RUnlock()
-	if cur == nil {
-		return
-	}
+	cur := s.aliases.Load()
 	fi, err := os.Stat(s.aliasesFile)
 	if err != nil {
 		return
 	}
-	if !fi.ModTime().After(cur.ModTime) {
+	if cur != nil && !fi.ModTime().After(cur.ModTime) {
 		return
 	}
-	aliasesReloadMu.Lock()
-	defer aliasesReloadMu.Unlock()
-	if s.aliases == nil {
+	now := time.Now().UnixMilli()
+	if now-s.aliasesTryAt.Load() < aliasesRetryMillis {
 		return
 	}
-	if fi2, err := os.Stat(s.aliasesFile); err != nil || !fi2.ModTime().After(s.aliases.ModTime) {
+	if !s.aliasesBusy.CompareAndSwap(false, true) {
 		return
 	}
+	s.aliasesTryAt.Store(now)
+	if cur == nil {
+		s.loadAliasesSnapshot()
+		return
+	}
+	go s.loadAliasesSnapshot()
+}
+
+func (s *server) loadAliasesSnapshot() {
+	defer s.aliasesBusy.Store(false)
 	ad, err := loadAliasesFile(s.aliasesFile)
 	if err != nil {
 		log.Printf("⚠ 热加载别名文件失败: %v", err)
 		return
 	}
-	s.aliases = ad
+	s.aliases.Store(ad)
 }
 
 func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
@@ -63,9 +67,7 @@ func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.reloadAliasesIfStale()
-	aliasesReloadMu.RLock()
-	ad := s.aliases
-	aliasesReloadMu.RUnlock()
+	ad := s.aliases.Load()
 
 	if ad == nil {
 		writeJSON(w, http.StatusServiceUnavailable, apiError{Error: "别名数据未加载，请使用 --aliases-file 参数指定 person_alias.json 文件"})
