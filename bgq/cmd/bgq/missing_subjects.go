@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -77,6 +78,10 @@ func (s *server) handleCheckMissingStaff(w http.ResponseWriter, r *http.Request)
 	}
 
 	targetID, _ := strconv.Atoi(targetStr)
+
+	if fi, err := os.Stat(s.dbPath); err == nil && beginConditional(w, r, fi.ModTime(), fi.Size()) {
+		return
+	}
 
 	sql := buildCheckSQL(typeCode, name, positions, targetID)
 

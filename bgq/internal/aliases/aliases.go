@@ -18,11 +18,13 @@ type Entry struct {
 }
 
 // Data is the parsed person_alias.json: person entries and the alias → person
-// index mapping. ModTime is the source file mtime, used for hot-reload.
+// index mapping. ModTime is the source file mtime and Size its byte length,
+// used for hot-reload and HTTP cache validators.
 type Data struct {
 	Persons []Entry
 	Aliases map[string][]int
 	ModTime time.Time
+	Size    int64
 }
 
 // Load reads and parses person_alias.json: a two-element array
@@ -85,7 +87,7 @@ func Load(path string) (*Data, error) {
 	}
 
 	log.Printf("已加载 %d 个别名，映射到 %d 个人物", len(aliases), len(persons))
-	return &Data{Persons: persons, Aliases: aliases, ModTime: fi.ModTime()}, nil
+	return &Data{Persons: persons, Aliases: aliases, ModTime: fi.ModTime(), Size: fi.Size()}, nil
 }
 
 // Normalize normalizes a person alias for lookup.

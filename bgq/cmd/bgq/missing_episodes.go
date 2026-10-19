@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"sort"
 	"strconv"
@@ -202,6 +203,10 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	targetID, _ := strconv.Atoi(targetStr)
+
+	if fi, err := os.Stat(s.dbPath); err == nil && beginConditional(w, r, fi.ModTime(), fi.Size()) {
+		return
+	}
 
 	positions := model.StaffPositions[2]
 

@@ -70,6 +70,7 @@ func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
 	ad := s.aliases.Load()
 
 	if ad == nil {
+		w.Header().Set("Cache-Control", "no-store")
 		writeJSON(w, http.StatusServiceUnavailable, apiError{Error: "别名数据未加载，请使用 --aliases-file 参数指定 person_alias.json 文件"})
 		return
 	}
@@ -80,19 +81,21 @@ func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	key := normalizeAlias(alias)
-	indices, ok := ad.Aliases[key]
-	if !ok {
-		writeJSON(w, http.StatusOK, []personAliasEntry{})
+	if beginConditional(w, r, ad.ModTime, ad.Size) {
 		return
 	}
 
-	result := make([]personAliasEntry, 0, len(indices))
-	for _, idx := range indices {
-		if idx >= 0 && idx < len(ad.Persons) {
-			entry := ad.Persons[idx]
-			if entry.Name != "" {
-				result = append(result, entry)
+	key := normalizeAlias(alias)
+	result := []personAliasEntry{}
+	indices, ok := ad.Aliases[key]
+	if ok {
+		result = make([]personAliasEntry, 0, len(indices))
+		for _, idx := range indices {
+			if idx >= 0 && idx < len(ad.Persons) {
+				entry := ad.Persons[idx]
+				if entry.Name != "" {
+					result = append(result, entry)
+				}
 			}
 		}
 	}
