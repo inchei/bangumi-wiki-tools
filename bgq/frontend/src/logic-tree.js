@@ -7,6 +7,7 @@ import {
   EPISODE_FIELD_CONFIGS,
   resetLogicIdCounter,
   incLogicIdCounter,
+  ensureLogicIds,
   setPendingDeleteExempt,
   announce,
   bumpConditionStructureVersion,
@@ -106,13 +107,134 @@ function findAndReplace(node, id, replacer) {
   return changed ? { ...node, items: newItems } : node;
 }
 
+export function eachLogicInstance(node, fn, parentOf) {
+  fn(node, parentOf);
+  const items = node.items || [];
+  for (let idx = 0; idx < items.length; idx++) {
+    const item = items[idx];
+    if (!item || typeof item !== "object") continue;
+    if (
+      item.logic &&
+      typeof item.logic === "object" &&
+      !Array.isArray(item.logic)
+    ) {
+      eachLogicInstance(item.logic, fn, { kind: "items", group: node, idx });
+    }
+    forEachCondArray(item, (conds) => {
+      for (const c of conds) {
+        if (c.logic && typeof c.logic === "object") {
+          eachLogicInstance(c.logic, fn, { kind: "cond", group: node, idx });
+        }
+      }
+    });
+    for (const key of Object.keys(item)) {
+      const val = item[key];
+      if (
+        val &&
+        typeof val === "object" &&
+        val.logic &&
+        typeof val.logic === "object" &&
+        !Array.isArray(val.logic) &&
+        !val.conditions
+      ) {
+        eachLogicInstance(val.logic, fn, {
+          kind: "holder",
+          group: node,
+          idx,
+        });
+      }
+    }
+  }
+}
+
+function hasLogicId(root, id) {
+  let found = false;
+  eachLogicInstance(
+    root,
+    (instance) => {
+      if (instance._id === id) found = true;
+    },
+    null,
+  );
+  return found;
+}
+
+export function findItemLocation(root, id) {
+  let found = null;
+  eachLogicInstance(
+    root,
+    (instance, parentOf) => {
+      if (found) return;
+      for (let idx = 0; idx < instance.items.length; idx++) {
+        const e = instance.items[idx];
+        if (!e || typeof e !== "object") continue;
+        if (
+          (e._id != null && e._id === id) ||
+          (e.logic && e.logic._id != null && e.logic._id === id)
+        ) {
+          found = { group: instance, idx, parentOf };
+          return;
+        }
+      }
+    },
+    null,
+  );
+  return found;
+}
+
+export function moveLogicItem(sourceId, targetGroupId, insertIdx) {
+  const root = getRootLogic();
+  const src = findItemLocation(root, sourceId);
+  if (!src) return null;
+  const entry = src.group.items[src.idx];
+  let cycle = false;
+  if (entry.logic) {
+    eachLogicInstance(
+      entry.logic,
+      (instance) => {
+        if (instance._id === targetGroupId) cycle = true;
+      },
+      null,
+    );
+  }
+  if (cycle) return null;
+  const removed = findAndReplace(root, src.group._id, (n) => ({
+    ...n,
+    items: n.items.filter((_, i) => i !== src.idx),
+  }));
+  if (!hasLogicId(removed, targetGroupId)) return null;
+  const final = findAndReplace(removed, targetGroupId, (n) => {
+    const items = [...n.items];
+    const at = Math.min(Math.max(insertIdx, 0), items.length);
+    items.splice(at, 0, entry);
+    return { ...n, items };
+  });
+  if (src.group._id === targetGroupId && insertIdx === src.idx) {
+    return { ok: true, unchanged: true };
+  }
+  getTargetStore().set(final);
+  bumpConditionStructureVersion();
+  return { ok: true, unchanged: false };
+}
+
+function stripPrivate(value) {
+  if (Array.isArray(value)) return value.map(stripPrivate);
+  if (!value || typeof value !== "object") return value;
+  const out = {};
+  for (const key of Object.keys(value)) {
+    if (key.startsWith("_")) continue;
+    out[key] = stripPrivate(value[key]);
+  }
+  return out;
+}
+
 function logicToFilter(lg) {
   return {
     logic: {
       op: lg.op,
       items: lg.items.map((item) => {
         if (item.logic) return logicToFilter(item.logic);
-        return item;
+        return stripPrivate(item);
       }),
     },
   };
@@ -426,8 +548,11 @@ function applyMutation(targetGroupId, mutator) {
 }
 
 function addToGroup(group, filter) {
+  const stamped = filter.logic
+    ? filter
+    : { ...filter, _id: incLogicIdCounter() };
   applyMutation(group._id, (items) => {
-    items.push(filter);
+    items.push(stamped);
     return items;
   });
 }
@@ -514,7 +639,7 @@ export function undoLogicLeafDelete(group, idx) {
 export function addLogicGroupTo(group) {
   const ng = newLogicGroup(group.op === "and" ? "or" : "and");
   applyMutation(group._id, (items) => {
-    items.push({ logic: ng });
+    items.push({ _id: ng._id, logic: ng });
     return items;
   });
   bumpConditionStructureVersion();
@@ -574,50 +699,10 @@ export function applyFiltersFromAPI(apiFilters) {
   resetLogicIdCounter();
   let newRoot;
   if (apiFilters.length === 1 && apiFilters[0].logic) {
-    newRoot = assignLogicIds(apiFilters[0].logic);
+    newRoot = apiFilters[0].logic;
   } else {
-    newRoot = { op: "and", items: apiFilters, _id: incLogicIdCounter() };
-    for (const item of newRoot.items) assignFilterIds(item);
+    newRoot = { op: "and", items: apiFilters };
   }
+  ensureLogicIds(newRoot);
   getTargetStore().set(newRoot);
-}
-
-function assignLogicIds(lg) {
-  if (!lg._id) lg._id = incLogicIdCounter();
-  for (const item of lg.items) {
-    assignFilterIds(item);
-  }
-  return lg;
-}
-
-// assignFilterIds assigns _id to every nested logic group reachable from a
-// filter item: plain logic groups, relation/staff/character conditions, and
-// person_character/character_person (subject_)conditions / episode logic.
-// Nested groups without _id are not addressable by tree mutations (toggle op,
-// add/remove condition) keyed by group id.
-function assignFilterIds(item) {
-  if (!item || typeof item !== "object") return;
-  if (item.logic) {
-    assignLogicIds(item.logic);
-    return;
-  }
-  for (const key of [
-    "relation",
-    "person_relation",
-    "character_relation",
-    "staff",
-    "character",
-    "person_character",
-    "person_cast_subject",
-    "character_person",
-    "subject_cast",
-  ]) {
-    const v = item[key];
-    if (!v) continue;
-    for (const c of v.conditions || []) assignFilterIds(c);
-    for (const c of v.subject_conditions || []) assignFilterIds(c);
-    for (const c of v.character_conditions || []) assignFilterIds(c);
-    for (const c of v.person_conditions || []) assignFilterIds(c);
-  }
-  if (item.episode?.logic) assignLogicIds(item.episode.logic);
 }

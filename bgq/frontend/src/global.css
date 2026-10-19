@@ -424,7 +424,8 @@ a:hover {
   gap: 3px;
   align-items: center;
   flex-wrap: wrap;
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .cond-row-inner .nested,
@@ -438,6 +439,57 @@ a:hover {
 .form-group .awesomplete {
   display: block;
   width: 100%;
+}
+
+/* ===== Drag & drop ===== */
+body.dnd-active {
+  cursor: grabbing;
+  user-select: none;
+}
+
+body.dnd-selecting,
+body.dnd-selecting * {
+  -webkit-user-select: none !important;
+  -webkit-touch-callout: none;
+  user-select: none !important;
+}
+
+body.dnd-active.dnd-cursor-forbid,
+body.dnd-active.dnd-cursor-forbid * {
+  cursor: not-allowed !important;
+}
+
+.dnd-lift {
+  opacity: 0.45;
+}
+
+.dnd-before {
+  position: relative;
+}
+
+.dnd-before::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 4px;
+  right: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent-strong);
+}
+
+.dnd-forbid.dnd-before::before {
+  background: var(--border);
+  opacity: 0.9;
+}
+
+.dnd-append {
+  box-shadow: 0 0 0 2px var(--accent-border);
+  border-radius: var(--radius-xs);
+}
+
+.dnd-append.dnd-forbid {
+  box-shadow: 0 0 0 2px var(--border);
 }
 
 /* ===== Scrollbars (thin, theme-consistent) ===== */

@@ -35,9 +35,11 @@
     prioritizedMetaTags,
     subjectFieldSuggestions,
   } from "../columns.js";
+  import { getConditionKind, describeItem } from "../dnd-model.js";
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
   import PendingDelete from "./PendingDelete.svelte";
+  import DragHandle from "./DragHandle.svelte";
   import RelationCondition from "./conditions/RelationCondition.svelte";
   import { MorphIcon } from "morphicons/svelte";
   import { X } from "lucide";
@@ -45,26 +47,18 @@
   /** @type {{ item: object, group: object, idx: number, ctx: string }} */
   let { item, group, idx, ctx } = $props();
 
-  function getConditionType(item) {
-    if (item.field) return "field";
-    if (item.tag) return "tag";
-    if (item.meta_tag) return "meta_tag";
-    if (item.global) return "global";
-    if (item.type) return "type";
-    if (item.relation) return "relation";
-    if (item.person_relation) return "person_relation";
-    if (item.character_relation) return "character_relation";
-    if (item.person_character) return "person_character";
-    if (item.person_cast_subject) return "person_cast_subject";
-    if (item.subject_cast) return "subject_cast";
-    if (item.character_person) return "character_person";
-    if (item.character) return "character";
-    if (item.staff) return "staff";
-    if (item.episode) return "episode";
-    return "unknown";
-  }
-
-  const condType = $derived(getConditionType(item));
+  const condType = $derived(getConditionKind(item));
+  const COMPOSITE_KINDS = new Set([
+    "relation",
+    "person_relation",
+    "character_relation",
+    "character",
+    "staff",
+    "person_character",
+    "person_cast_subject",
+    "subject_cast",
+    "episode",
+  ]);
   const fc = $derived(
     condType === "field" && item.field._special
       ? ctxFieldConfigs(ctx)[item.field.field] || null
@@ -130,6 +124,9 @@
   class="cond-row"
   role="group"
   aria-labelledby={`rowtitle-${group._id}-${idx}`}
+  data-item-id={item._id}
+  data-item-label={describeItem(item, ctx)}
+  data-pending={item._pendingDelete ? "1" : undefined}
 >
   {#if item._pendingDelete}
     <PendingDelete
@@ -138,6 +135,17 @@
       onUndo={() => undoLogicLeafDelete(group, idx)}
     />
   {:else}
+    {#snippet dragHandle()}
+      <DragHandle
+        sourceId={item._id}
+        kind="leaf"
+        entry={item}
+        label={describeItem(item, ctx)}
+      />
+    {/snippet}
+    {#if condType && !COMPOSITE_KINDS.has(condType)}
+      {@render dragHandle()}
+    {/if}
     {#if condType === "field"}
       {#if fc}
         <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}
@@ -353,6 +361,7 @@
     {:else if condType === "relation"}
       <RelationCondition
         label="条目关系"
+        handle={dragHandle}
         typeValue={item.relation.type}
         typeSuggestions={relationSuggestions}
         onTypeChange={(v) => updateCondition(group, idx, "relation", "type", v)}
@@ -371,6 +380,7 @@
     {:else if condType === "person_relation"}
       <RelationCondition
         label="人物关系"
+        handle={dragHandle}
         typeValue={item.person_relation.type}
         typeSuggestions={["任意"].concat(PERSON_RELATIONS)}
         onTypeChange={(v) =>
@@ -391,6 +401,7 @@
     {:else if condType === "character_relation"}
       <RelationCondition
         label="角色关系"
+        handle={dragHandle}
         typeValue={item.character_relation.type}
         typeSuggestions={["任意"].concat(CHARACTER_RELATIONS)}
         onTypeChange={(v) =>
@@ -411,6 +422,7 @@
     {:else if condType === "character"}
       <RelationCondition
         label="角色"
+        handle={dragHandle}
         typeValue={item.character.type}
         typeSuggestions={["任意"].concat(CHARACTER_ASSOC_TYPES)}
         onTypeChange={(v) =>
@@ -443,6 +455,7 @@
               condCtx: CTX_PERSON,
             }}
       <div class="cond-row-inner" role="group" aria-label={caCfg.label}>
+        {@render dragHandle()}
         <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}
           >{caCfg.label}</span
         >
@@ -577,6 +590,7 @@
     {:else if condType === "person_cast_subject"}
       {@const pcs = item.person_cast_subject}
       <div class="cond-row-inner" role="group" aria-label="出演作品">
+        {@render dragHandle()}
         <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}
           >出演作品</span
         >
@@ -710,6 +724,7 @@
     {:else if condType === "subject_cast"}
       {@const sc = item.subject_cast}
       <div class="cond-row-inner" role="group" aria-label="出演">
+        {@render dragHandle()}
         <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>出演</span>
         <AwesompleteInput
           restrict={true}
@@ -792,6 +807,7 @@
         s.positions?.length > 0 ? s.positions.join(",") : s.position || ""}
       <RelationCondition
         label={$queryTarget === "person" ? "关联" : "人物"}
+        handle={dragHandle}
         mode={s.mode}
         onModeChange={(v) => updateCondition(group, idx, "staff", "mode", v)}
         countOp={s.count_op}
@@ -831,6 +847,7 @@
     {:else if condType === "episode"}
       {@const ep = item.episode}
       <div class="cond-row-inner" role="group" aria-label="剧集">
+        {@render dragHandle()}
         <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>剧集</span>
         <select
           class="select"

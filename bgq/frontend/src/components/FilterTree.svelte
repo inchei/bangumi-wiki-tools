@@ -6,16 +6,12 @@
     characterRootLogic,
     episodeRootLogic,
     queryTarget,
-    ctxFieldConfigs,
     CTX_SUBJECT,
     CTX_PERSON,
     CTX_STAFF_PERSON,
     CTX_CHARACTER,
     CTX_EPISODE,
-    EPISODE_FIELDS,
-    EPISODE_FIELD_LABELS,
     focusRequest,
-    isPersonCtx,
   } from "../stores.js";
   import {
     toggleLogicOp,
@@ -24,9 +20,11 @@
     removeLogicGroup,
     undoLogicGroupDelete,
   } from "../logic-tree.js";
+  import { describeItem, getConditionTypeOptions } from "../dnd-model.js";
   import ConditionRow from "./ConditionRow.svelte";
   import PendingDelete from "./PendingDelete.svelte";
   import Self from "./FilterTree.svelte";
+  import DragHandle from "./DragHandle.svelte";
   import { MorphIcon } from "morphicons/svelte";
   import { X } from "lucide";
 
@@ -75,8 +73,9 @@
     newTypeSelectMap[effectiveCtx] = val;
   }
 
-  // Reset newTypeSelect when options change and current value is no longer valid
-  const typeOptions = $derived(getNewTypeOptions(effectiveCtx, $queryTarget));
+  const typeOptions = $derived(
+    getConditionTypeOptions(effectiveCtx, $queryTarget),
+  );
   $effect(() => {
     if (!typeOptions.some((opt) => opt.value === newTypeSelect)) {
       newTypeSelectMap[$queryTarget] = typeOptions[0]?.value || "field";
@@ -88,23 +87,21 @@
     if (!req || req.groupId !== logic._id || !containerEl) return;
     tick().then(() => {
       if (req.isGroup) {
-        // Nested group added — focus first focusable in the last .logic-group child
         const groups = containerEl.querySelectorAll(":scope > .logic-group");
         const lastGroup = groups[groups.length - 1];
         if (lastGroup)
           lastGroup
             .querySelector(
-              'button, [href], input, select, [tabindex]:not([tabindex="-1"])',
+              'button:not(.drag-handle), [href], input, select, [tabindex]:not([tabindex="-1"])',
             )
             ?.focus();
       } else {
-        // Condition added — focus first input in the last .cond-row
         const rows = containerEl.querySelectorAll(":scope > .cond-row");
         const lastRow = rows[rows.length - 1];
         if (lastRow)
           lastRow
             .querySelector(
-              'input, select, button, [tabindex]:not([tabindex="-1"])',
+              'input, select, button:not(.drag-handle), [tabindex]:not([tabindex="-1"])',
             )
             ?.focus();
       }
@@ -120,57 +117,6 @@
     e.stopPropagation();
     addLogicGroupTo(logic);
   }
-
-  function getNewTypeOptions(currentCtx, qTarget) {
-    const opts = [];
-    if (currentCtx === CTX_EPISODE) {
-      // Episode fields, both as primary target and as nested context (inside subject query)
-      for (const f of EPISODE_FIELDS)
-        opts.push({ value: "ep_" + f, label: EPISODE_FIELD_LABELS[f] });
-    } else if (currentCtx === CTX_CHARACTER) {
-      opts.push({ value: "field", label: "字段" });
-      opts.push({ value: "global", label: "全局" });
-      const cfc = ctxFieldConfigs(CTX_CHARACTER);
-      for (const k in cfc) opts.push({ value: k, label: cfc[k].label });
-      if (qTarget === "character") {
-        opts.push({ value: "character_relation", label: "角色关系" });
-        opts.push({ value: "character_person", label: "人物" });
-        opts.push({ value: "character", label: "条目" });
-      }
-    } else if (isPersonCtx(currentCtx)) {
-      opts.push({ value: "field", label: "字段" });
-      opts.push({ value: "global", label: "全局" });
-      const pfc = ctxFieldConfigs(CTX_PERSON);
-      for (const k in pfc) opts.push({ value: k, label: pfc[k].label });
-      if (currentCtx === CTX_STAFF_PERSON) {
-        opts.push({ value: "appear_eps", label: "参与" });
-      }
-      if (qTarget === "person") {
-        opts.push({ value: "person_relation", label: "人物关系" });
-        opts.push({ value: "person_character", label: "角色" });
-        opts.push({ value: "person_cast_subject", label: "出演作品" });
-      }
-      opts.push({ value: "staff", label: "条目" });
-    } else {
-      opts.push({ value: "field", label: "字段" });
-      const fc = ctxFieldConfigs(effectiveCtx);
-      for (const k in fc) opts.push({ value: k, label: fc[k].label });
-      opts.push({ value: "tag", label: "标签" });
-      opts.push({ value: "meta_tag", label: "公共标签" });
-      opts.push({ value: "global", label: "全局" });
-      if (qTarget === "subject") {
-        opts.push({ value: "relation", label: "条目关系" });
-        opts.push({ value: "character", label: "角色" });
-        opts.push({ value: "episode", label: "剧集" });
-        opts.push({ value: "subject_cast", label: "出演" });
-      }
-      opts.push({
-        value: "staff",
-        label: qTarget === "person" ? "条目" : "人物",
-      });
-    }
-    return opts;
-  }
 </script>
 
 <div
@@ -178,9 +124,23 @@
   class:root={isRoot}
   bind:this={containerEl}
   role="group"
-  aria-label="条件组"
+  aria-label={isRoot
+    ? `筛选条件，${describeItem({ logic }, effectiveCtx)}`
+    : describeItem({ logic }, effectiveCtx)}
+  data-logic-id={logic._id}
+  data-dnd-ctx={effectiveCtx}
+  data-item-id={!isRoot ? logic._id : undefined}
+  data-item-label={!isRoot ? describeItem({ logic }, effectiveCtx) : undefined}
 >
   <div class="logic-header">
+    {#if !isRoot && !hideDelete}
+      <DragHandle
+        sourceId={logic._id}
+        kind="group"
+        entry={{ logic }}
+        label={describeItem({ logic }, effectiveCtx)}
+      />
+    {/if}
     <div class="logic-op-toggle" role="radiogroup" aria-label="条件逻辑">
       <label class="op-btn" class:active={logic.op === "and"}>
         <input
@@ -222,13 +182,15 @@
     {/if}
   </div>
 
-  {#each logic.items as item, i (item.logic?._id ?? i)}
+  {#each logic.items as item, i (item._id ?? item.logic?._id ?? i)}
     {#if item._pendingDelete && item.logic}
       <PendingDelete
         label="已删除条件组"
         margin="2px 0"
         focusOnMount={true}
         onUndo={() => undoLogicGroupDelete(item.logic._id)}
+        itemId={item.logic._id}
+        itemLabel="已删除条件组"
       />
     {:else if item.logic}
       <Self

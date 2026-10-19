@@ -1,7 +1,14 @@
 <script>
   import { onMount } from "svelte";
 
-  let { label, onUndo, margin = "0", focusOnMount = false } = $props();
+  let {
+    label,
+    onUndo,
+    margin = "0",
+    focusOnMount = false,
+    itemId = undefined,
+    itemLabel = undefined,
+  } = $props();
 
   let undoBtn = $state(null);
 
@@ -10,7 +17,12 @@
   });
 </script>
 
-<div class="pending-delete" style:margin>
+<div
+  class="pending-delete"
+  style:margin
+  data-item-id={itemId}
+  data-item-label={itemLabel}
+>
   <span class="pending-delete-label">{label}</span>
   <button bind:this={undoBtn} class="btn btn-outline btn-xs" onclick={onUndo}
     >撤销</button

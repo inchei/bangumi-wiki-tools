@@ -251,6 +251,7 @@
 <!-- Main Container -->
 <main class="container">
   <span class="sr-only" role="status">{$liveMsg}</span>
+  <div class="sr-only" id="dnd-lift-help">按 Enter 或空格拿取</div>
   <!-- Left Panel -->
   <div class="panel panel-left">
     <div class="target-toggle-bar">

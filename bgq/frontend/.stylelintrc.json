@@ -11,7 +11,7 @@
     "property-no-vendor-prefix": [
       true,
       {
-        "ignoreProperties": ["-webkit-text-size-adjust"]
+        "ignoreProperties": ["-webkit-text-size-adjust", "-webkit-user-select"]
       }
     ],
     "selector-pseudo-class-no-unknown": [

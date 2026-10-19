@@ -36,11 +36,13 @@
     onDelete,
     logic = undefined,
     nestedCtx,
+    handle,
     children,
   } = $props();
 </script>
 
 <div class="cond-row-inner" role="group" aria-label={label}>
+  {#if handle}{@render handle()}{/if}
   <span class="cond-type">{label}</span>
   {#if onTypeChange}
     <AwesompleteInput

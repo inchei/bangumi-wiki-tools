@@ -321,6 +321,64 @@ export function incLogicIdCounter() {
   return ++_logicIdCounter;
 }
 
+export function ensureLogicIds(node) {
+  if (!node || typeof node !== "object") return node;
+  if (!node._id) node._id = incLogicIdCounter();
+  for (const item of node.items || []) {
+    if (!item || typeof item !== "object") continue;
+    if (item.logic && typeof item.logic === "object") {
+      ensureLogicIds(item.logic);
+      if (!item._id) item._id = item.logic._id;
+      continue;
+    }
+    if (!item._id) item._id = incLogicIdCounter();
+  }
+  walkCondArrayItems(node);
+  return node;
+}
+
+function walkCondArrayItems(node) {
+  for (const item of node.items || []) {
+    if (!item || typeof item !== "object" || item.logic) continue;
+    walkWrapItem(item);
+  }
+}
+
+function walkWrapItem(item) {
+  for (const key of [
+    "relation",
+    "person_relation",
+    "character_relation",
+    "staff",
+    "character",
+    "person_character",
+    "person_cast_subject",
+    "character_person",
+    "subject_cast",
+  ]) {
+    const v = item[key];
+    if (!v) continue;
+    for (const arrKey of [
+      "conditions",
+      "subject_conditions",
+      "character_conditions",
+      "person_conditions",
+    ]) {
+      const arr = v[arrKey];
+      if (!Array.isArray(arr)) continue;
+      for (const c of arr) {
+        if (!c || typeof c !== "object" || !c.logic) continue;
+        ensureLogicIds(c.logic);
+        if (!c._id) c._id = c.logic._id;
+      }
+    }
+  }
+  if (item.episode?.logic) {
+    ensureLogicIds(item.episode.logic);
+    if (!item.episode._id) item.episode._id = item.episode.logic._id;
+  }
+}
+
 const STORAGE_KEY = "bgq_state";
 
 function saveToStorage() {
@@ -374,6 +432,11 @@ export const episodeRootLogic = writable(
 );
 
 if (saved?._idCounter != null) _logicIdCounter = saved._idCounter;
+if (saved) {
+  for (const k of ["subject", "person", "character", "episode"]) {
+    if (saved[k]) ensureLogicIds(saved[k]);
+  }
+}
 if (saved?.target) queryTarget.set(saved.target);
 if (saved?.outputColumns != null) outputColumns.set(saved.outputColumns);
 if (saved?.sortRules != null) sortRules.set(saved.sortRules);
