@@ -356,8 +356,8 @@
     display: inline-block;
   }
 
-  /* Outer panel owns the rounded corners; the inner ul scrolls so the
-     scrollbar stays between the corners instead of covering them. */
+  /* Outer panel owns the rounded corners and clips the scrolling list inside
+     so the thin scrollbar never painted over the corners. */
   .aw-input :global(~ .aw-drop) {
     position: absolute;
     left: 0;
@@ -369,7 +369,8 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     box-shadow: var(--dropdown-shadow);
-    padding: 12px 0;
+    padding: 0;
+    overflow: hidden;
     margin: 2px 0 0;
     font-size: 0.75rem;
     transition: none;
