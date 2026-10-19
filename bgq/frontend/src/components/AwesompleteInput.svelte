@@ -194,6 +194,23 @@
       };
     }
     aw = new Awesomplete(inputEl, opts);
+    // Wrap the list: the outer div carries the rounded panel while the ul
+    // keeps scrolling inside, so the scrollbar stays off the rounded corners.
+    const drop = document.createElement("div");
+    drop.className = "aw-drop";
+    const ul = aw.ul;
+    ul.before(drop);
+    drop.appendChild(ul);
+    const syncDrop = () => {
+      drop.hidden = ul.hidden || ul.children.length === 0;
+    };
+    const mo = new MutationObserver(syncDrop);
+    mo.observe(ul, {
+      attributes: true,
+      attributeFilter: ["hidden"],
+      childList: true,
+    });
+    syncDrop();
     inputEl.addEventListener("focus", () => {
       updateDynamicList();
       aw.evaluate();
@@ -315,6 +332,7 @@
       }, d);
     });
     return () => {
+      mo.disconnect();
       aw = null;
     };
   });
@@ -338,28 +356,38 @@
     display: inline-block;
   }
 
-  .aw-input :global(~ ul) {
+  /* Outer panel owns the rounded corners; the inner ul scrolls so the
+     scrollbar stays between the corners instead of covering them. */
+  .aw-input :global(~ .aw-drop) {
     position: absolute;
     left: 0;
     width: auto;
+    min-width: 100%;
     z-index: 100;
-    max-height: 200px;
-    overflow-y: auto;
     background: var(--dropdown-bg);
     backdrop-filter: blur(10px);
     border: 1px solid var(--border);
     border-radius: 12px;
     box-shadow: var(--dropdown-shadow);
-    list-style: none;
-    padding: 4px 0;
+    padding: 12px 0;
     margin: 2px 0 0;
     font-size: 0.75rem;
     transition: none;
     animation: none;
-    scrollbar-width: thin;
   }
 
-  .aw-input :global(~ ul > li) {
+  .aw-input :global(~ .aw-drop > ul) {
+    max-height: 200px;
+    overflow-y: auto;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .aw-input :global(~ .aw-drop > ul > li) {
+    list-style: none;
     padding: 5px 10px;
     line-height: 20px;
     cursor: pointer;
@@ -369,40 +397,32 @@
     transition: none;
   }
 
-  .aw-input :global(~ ul > li:hover) {
+  .aw-input :global(~ .aw-drop > ul > li:hover) {
     background: var(--accent-light);
     color: var(--text);
   }
 
-  .aw-input :global(~ ul > li[aria-selected="true"]) {
+  .aw-input :global(~ .aw-drop > ul > li[aria-selected="true"]) {
     background: var(--accent-strong);
     color: var(--on-accent-strong);
   }
 
-  .aw-input :global(~ ul > li:hover mark) {
+  .aw-input :global(~ .aw-drop > ul > li:hover mark) {
     background: transparent;
     color: var(--accent-strong);
     font-weight: 600;
   }
 
-  .aw-input :global(~ ul > li[aria-selected="true"] mark) {
+  .aw-input :global(~ .aw-drop > ul > li[aria-selected="true"] mark) {
     background: transparent;
     color: var(--on-accent-strong);
     font-weight: 600;
   }
 
-  .aw-input :global(~ ul > li mark) {
+  .aw-input :global(~ .aw-drop > ul > li mark) {
     background: transparent;
     color: var(--accent-strong);
     font-weight: 600;
     padding: 0;
-  }
-
-  .aw-input :global(~ ul:empty) {
-    display: none;
-  }
-
-  .aw-input :global(~ ul::before) {
-    display: none;
   }
 </style>
