@@ -143,17 +143,21 @@ export async function runEpisodeCheck() {
 }
 
 export function initAddRelated() {
-  const personName = document.querySelector('.nameSingle').textContent.trim();
+  const personName = document.querySelector('.nameSingle')?.textContent.trim();
+  if (!personName) return;
   const pidMatch = location.pathname.match(/\/person\/(\d+)/);
   personId = pidMatch ? pidMatch[1] : '';
 
-  type = {
+  // 类型直接取自路径，避免依赖页面上的 .cat .selected
+  const typeName = {
     anime: 2,
     book: 1,
     music: 3,
     game: 4,
     real: 6,
-  }[document.querySelector('.cat .selected').href.split('/').pop()];
+  }[location.pathname.split('/').pop()];
+  if (!typeName) return;
+  type = typeName;
 
   select = document.createElement('select');
   select.className = 'bgm-mp-select';

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.3.4
+// @version      0.3.5
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1330,6 +1330,7 @@ document.head.appendChild(styleEl);
     const infobox = document.querySelector("#infobox");
     if (!infobox) return;
     const DELIM_RE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等]+/;
+    const EP_MARKER_RE = /^\d+$|^\d+\s*-\s*\d+$|^(?:OP|ED|SP)(?:\d+)?$/i;
     infobox.querySelectorAll("li:not(.sub_container):not(.sub_group)").forEach((li) => {
       const tip = li.querySelector(".tip");
       if (!tip) return;
@@ -1340,7 +1341,7 @@ document.head.appendChild(styleEl);
       const clone = li.cloneNode(true);
       clone.querySelectorAll("a, .tip").forEach((el) => el.remove());
       const text = clone.textContent;
-      const names = text.split(DELIM_RE).map((s) => s.trim()).filter(Boolean);
+      const names = text.split(DELIM_RE).map((s) => s.trim()).filter(Boolean).filter((n) => !EP_MARKER_RE.test(n));
       names.sort((a, b) => b.length - a.length);
       let tipHTML = "";
       if (tip) {
@@ -1873,16 +1874,19 @@ document.head.appendChild(styleEl);
     }
   }
   function initAddRelated() {
-    const personName = document.querySelector(".nameSingle").textContent.trim();
+    const personName = document.querySelector(".nameSingle")?.textContent.trim();
+    if (!personName) return;
     const pidMatch = location.pathname.match(/\/person\/(\d+)/);
     personId = pidMatch ? pidMatch[1] : "";
-    type = {
+    const typeName = {
       anime: 2,
       book: 1,
       music: 3,
       game: 4,
       real: 6
-    }[document.querySelector(".cat .selected").href.split("/").pop()];
+    }[location.pathname.split("/").pop()];
+    if (!typeName) return;
+    type = typeName;
     select = document.createElement("select");
     select.className = "bgm-mp-select";
     let posOpts = '<option value="">所有职位</option>';
@@ -2133,7 +2137,9 @@ document.head.appendChild(styleEl);
       initPersonPage();
       return;
     }
-    initAddRelated();
+    if (/^\/person\/\d+\/add_related\/(anime|book|music|game|real)$/.test(pathname)) {
+      initAddRelated();
+    }
   })();
   if (typeof chiiLib !== "undefined" && chiiLib.ukagaka && chiiLib.ukagaka.addPanelTab) {
     chiiLib.ukagaka.addPanelTab({

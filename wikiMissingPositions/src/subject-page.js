@@ -42,6 +42,8 @@ export function initSubjectPage() {
   if (!infobox) return;
 
   const DELIM_RE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等]+/;
+  // 跳过集数标记类条目：纯数字、数字区间（1-12）、OP/ED/SP（可带数字）
+  const EP_MARKER_RE = /^\d+$|^\d+\s*-\s*\d+$|^(?:OP|ED|SP)(?:\d+)?$/i;
 
   infobox.querySelectorAll('li:not(.sub_container):not(.sub_group)').forEach((li) => {
     const tip = li.querySelector('.tip');
@@ -58,7 +60,8 @@ export function initSubjectPage() {
     const names = text
       .split(DELIM_RE)
       .map((s) => s.trim())
-      .filter(Boolean);
+      .filter(Boolean)
+      .filter((n) => !EP_MARKER_RE.test(n));
     names.sort((a, b) => b.length - a.length);
 
     let tipHTML = '';

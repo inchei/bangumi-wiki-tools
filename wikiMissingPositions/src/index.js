@@ -27,8 +27,11 @@ const pathname = location.pathname;
     initPersonPage();
     return;
   }
-  // Only add-related pages reach here
-  initAddRelated();
+  // Only person add-related pages reach here; 站内还有大量 subject/person
+  // 子页（comments、works、collect 等）会漏进兜底路由，一律静默退出
+  if (/^\/person\/\d+\/add_related\/(anime|book|music|game|real)$/.test(pathname)) {
+    initAddRelated();
+  }
 })();
 
 if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPanelTab) {
