@@ -8,8 +8,7 @@ const SPLIT_RULE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;
 const FILTER_WORDS = ['CV:', 'CV\\.', 'feat\\.', '\\*'];
 // 跳过集数标记类条目：纯数字、数字区间（1-12）、OP/ED/SP（可带数字）
 const EP_MARKER_RE = /^\d+$|^\d+\s*-\s*\d+$|^(?:OP|ED|SP)(?:\d+)?$/i;
-
-const positionNames = new Set(Object.values(POSITION_IDS[2] || {}));
+const TYPE_CODES = { anime: 2, book: 1, music: 3, game: 4, real: 6 };
 
 /**
  * infobox 值文本拆成人名列表
@@ -48,8 +47,15 @@ export async function getInfoboxStaffInfo() {
   const infobox = document.querySelector('#infobox') || (await fetchInfobox());
   if (!infobox) throw new Error('未找到infobox');
 
+  const typeSel = document.querySelector('.focus.chl')?.href.split('/').pop();
+  const typeCode = TYPE_CODES[typeSel] || 2;
+  const typeLabel = TYPE_CODES[typeSel] ? typeSel : 'anime';
+  const positionNames = new Set(Object.values(POSITION_IDS[typeCode] || {}));
+
   const staffInfo = {};
   const unknownRoles = new Set();
+  const skippedRoles = [];
+  const allRows = [];
 
   for (const li of infobox.querySelectorAll('li')) {
     if (li.classList.contains('sub_container')) continue;
@@ -57,18 +63,22 @@ export async function getInfoboxStaffInfo() {
     const staffs = li.childNodes[1]?.textContent.trim();
     if (!job || !staffs || !staffs.trim()) continue;
 
-    // 职位表以 POSITION_IDS 为准（精确简体名）；确属权威职位但页面职位下拉
-    // 缺失时才提示，普通字段静默跳过
-    if (!positionNames.has(job)) continue;
+    const names = splitStaffs(staffs.trim());
+    allRows.push({ job, names });
+
+    if (!positionNames.has(job)) {
+      skippedRoles.push(job);
+      continue;
+    }
     if (!roleIdMap[job]) {
       unknownRoles.add(job);
       continue;
     }
 
-    for (const name of splitStaffs(staffs.trim())) {
+    for (const name of names) {
       (staffInfo[name] ||= {})[job] = [];
     }
   }
 
-  return { staffInfo, unknownRoles: [...unknownRoles] };
+  return { staffInfo, unknownRoles: [...unknownRoles], skippedRoles, allRows, typeLabel };
 }

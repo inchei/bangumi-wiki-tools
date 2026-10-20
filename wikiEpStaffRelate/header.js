@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         根据章节简介关联制作人员参与
 // @namespace    wiki.ep.staff.replate
-// @version      1.1.0
+// @version      1.0.1
 // @description  从章节页或人物关联页根据章节简介关联制作人员参与
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico

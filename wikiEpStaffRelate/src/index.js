@@ -27,7 +27,7 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
     const name = params.get('name');
     document.querySelector('#crt_name').value = name;
   } else if (location.pathname.match(/^\/subject\/\d+\/add_related\/person$/)) {
-    const isAnime = document.querySelector('.focus').classList.contains('anime');
+    const isAnime = document.querySelector('.focus.chl')?.href.split('/').pop() === 'anime';
     const subjectId = location.pathname.split('/')[2];
     const catBox = document.querySelector('#indexCatBox');
 
@@ -80,6 +80,7 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
 
           btn.textContent = `解析完成！共处理 ${allEps.length} 集`;
         } catch (e) {
+          console.error('获取章节参与失败：', e);
           alert(`获取失败：${e.message}`);
           btn.textContent = '获取失败，点击重试';
           btn.disabled = false;
@@ -98,8 +99,18 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
         infoboxBtn.disabled = true;
         infoboxBtn.textContent = '解析infobox中……';
 
-        const { staffInfo, unknownRoles } = await getInfoboxStaffInfo();
-        if (!Object.keys(staffInfo).length) throw new Error('未从infobox解析到任何人员信息');
+        const { staffInfo, unknownRoles, skippedRoles, allRows, typeLabel } =
+          await getInfoboxStaffInfo();
+        if (!Object.keys(staffInfo).length) {
+          const extra = [];
+          if (skippedRoles.length) extra.push(`未识别职位：${skippedRoles.join('、')}`);
+          if (unknownRoles.length) extra.push(`下拉缺失：${[...unknownRoles].join('、')}`);
+          const err = new Error(
+            `未从 ${typeLabel} infobox 解析到任何人员信息${extra.length ? `（${extra.join('；')}）` : ''}`,
+          );
+          err.detail = { skippedRoles, unknownRoles, allRows, typeLabel };
+          throw err;
+        }
 
         await updAppearEps(staffInfo, [], {
           summary: '根据infobox关联人物',
@@ -110,6 +121,7 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
           `解析完成！共 ${Object.keys(staffInfo).length} 人` +
           (unknownRoles.length ? `，未识别职位：${unknownRoles.join('、')}` : '');
       } catch (e) {
+        console.error('根据infobox关联失败：', e, e.detail);
         alert(`获取失败：${e.message}`);
         infoboxBtn.textContent = '获取失败，点击重试';
         infoboxBtn.disabled = false;
