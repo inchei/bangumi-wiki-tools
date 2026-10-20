@@ -85,6 +85,7 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts [
 	mux.HandleFunc("/api/persons/{name}/missing-subjects", s.handleCheckMissingStaff)
 	mux.HandleFunc("/api/persons/{name}/missing-episodes", s.handleMissingEpisodes)
 	mux.HandleFunc("/api/aliases/{alias}", s.handleAliases)
+	mux.HandleFunc("/api/aliases", s.handleAliasesBatch)
 
 	mux.HandleFunc("/sitemap.xml", s.handleSitemap)
 	mux.HandleFunc("/", s.handleStatic)

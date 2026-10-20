@@ -304,6 +304,21 @@ curl "http://localhost:8080/api/aliases/斧谷稔"
 ]
 ```
 
+批量查询（wikiEpStaffRelate 等，一个请求查多个名字，结果按输入名键控）：
+
+```bash
+curl "http://localhost:8080/api/aliases?names=斧谷稔&names=古谷徹"
+```
+
+```json
+{
+  "names": {
+    "斧谷稔": [{ "name": "富野由悠季", "id": 613 }],
+    "古谷徹": []
+  }
+}
+```
+
 别名数据由 `../person_alias.py` 生成（需 `uv`）：
 
 ```bash
