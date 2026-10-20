@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"gopkg.in/yaml.v3"
 )
@@ -127,14 +128,20 @@ func main() {
 		}
 	}
 
-	wikiMPDir := "../../../wikiMissingPositions/src"
-	if _, err := os.Stat(wikiMPDir); err == nil {
+	wikiMPDir := findPackageDir("wikiMissingPositions/src")
+	if wikiMPDir != "" {
 		fmt.Println("  Generating position-ids.js...")
 		generatePositionIDs(staffYAML, wikiMPDir)
 	}
 
-	wikiBatchDir := "../../../wikiBatch/src"
-	if _, err := os.Stat(wikiBatchDir); err == nil {
+	wikiEpStaffRelateDir := findPackageDir("wikiEpStaffRelate/src")
+	if wikiEpStaffRelateDir != "" {
+		fmt.Println("  Generating positions.generated.js...")
+		generateStaffFallbackPositions(staffYAML, wikiEpStaffRelateDir)
+	}
+
+	wikiBatchDir := findPackageDir("wikiBatch/src")
+	if wikiBatchDir != "" {
 		fmt.Println("  Generating infobox-field-order.ts...")
 		generateInfoboxFieldOrder(wikiTemplateYAML, wikiBatchDir)
 	}
@@ -354,6 +361,7 @@ type RelationYAML struct {
 
 type StaffItem struct {
 	CN string `yaml:"cn"`
+	JP string `yaml:"jp"`
 }
 
 type StaffYAML struct {
@@ -392,6 +400,342 @@ func generatePositionIDs(staffYAML []byte, outDir string) {
 	sb.WriteString("};\n")
 
 	writeToFile(filepath.Join(outDir, "position-ids.js"), sb.String())
+}
+
+// --- Staff fallback positions (wikiEpStaffRelate) ---
+//
+// skip semantics: these official positions are already covered behavior-wise
+// by hand-written curated patterns, or the keyword literal cannot be
+// disambiguated with assertions; no fallback is generated and matched text is
+// attributed to the curated position. Entries previously reasoned as "covered
+// by curated X/Y patterns" were removed in the 2024-10 assertion refinement
+// (see git history).
+
+var fallbackSkip = map[string]string{
+	"製作":        "identical literal to the curated 制作 keyword (?:製作|制作): both kws match the same text, assertions cannot separate identical strings; keeping the curated merge into 制作",
+	"系列监督":      "official JP シリーズ監督 is mapped to 导演 in the yml and curated includes it in its keyword by design",
+	"Bank 分镜演出": "curated 分镜 (コンテ) already catches バンク( ?)コンテ・演出 via the SEP コンテ・; prefixes vary freely (バンク/Bank/space/劇中劇/ライブ), the kw lookbehind wall would need fragile optional-space alternatives; label stays 分镜",
+	"Live 分镜演出": "same as Bank 分镜演出",
+	"剧中剧分镜演出":   "same as Bank 分镜演出",
+}
+
+// Official JP synonyms must not produce relations on their own for these
+// positions (助監督/監督補佐/監督助手 are recognition-only here, never related
+// as 副导演); only the CN-name pattern is emitted.
+var fallbackJpSuppress = map[string]bool{
+	"副导演": true,
+}
+
+// Synonyms for positions whose official JP name is empty (jp: "" in the yml).
+var fallbackSpecial = map[string]string{
+	"数码绘图": "デジタル彩色|数码绘图",
+}
+
+// jpPrefixWords: leading tokens that fuse with the following word to form one
+// composite synonym ("OP・ED アニメーション制作", "劇中劇 キャラクターデザイン",
+// "CG 監督補佐"); everything else splits into standalone synonyms (the yml
+// separates alternate spellings of one position with whitespace/slashes).
+var jpPrefixWords = map[string]bool{
+	"OP・ED": true,
+	"OP":    true,
+	"ED":    true,
+	"CG":    true,
+	"3DCG":  true,
+	"劇中劇":   true,
+}
+
+var jpPrefixVariants = map[string][]string{
+	"OP・ED": {"OP・ED", "OP", "ED"},
+}
+
+// kw guards for generated patterns whose bare keyword over-matches a longer
+// official position's substring (3DCG 監督… also matches the CG keyword).
+var nameKwGuards = map[string]string{
+	"CG 导演助理": "(?<!3D)",
+}
+
+var fallbackReplacements = []struct {
+	from string
+	to   string
+}{
+	{"主题歌", "主題歌|主题歌"},
+	{"插入歌", "挿入歌|插入歌"},
+	{"制片人", "プロデューサー|制片人"},
+	{"制作人", "プロデューサー|制片人|制作人"},
+	{"动画师", "アニメーター|动画师"},
+	{"监督", "監督|监督"},
+	{"导演", "監督|导演|ディレクター"},
+	{"设计", "設計|设计"},
+	{"设定", "設定|设定"},
+	{"协力", "協力|协力"},
+	{"视觉", "ビジュアル|视觉"},
+	{"概念", "コンセプト|概念"},
+	{"怪物", "モンスター|怪物"},
+	{"故事", "ストーリー|故事"},
+	{"演员", "演員|演员"},
+	{"事务", "事務|事务"},
+	{"转场", "トランジション|转场"},
+	{"发行", "配給|发行"},
+	{"制作", "制作|製作"},
+	{"动画", "アニメーション|動畫|动画"},
+	{"作词", "作詞|作词"},
+	{"编曲", "編曲|编曲"},
+}
+
+// findPackageDir walks up from the CWD looking for the sibling `wiki-*/src`
+// package, so the output branches do not depend on a fixed run directory.
+func findPackageDir(rel string) string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	for {
+		if p := filepath.Join(dir, rel); dirExists(p) {
+			return p
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
+}
+
+func dirExists(p string) bool {
+	info, err := os.Stat(p)
+	return err == nil && info.IsDir()
+}
+
+func buildFallbackPattern(name, jp string) string {
+	variants := []string{buildCNFallback(name)}
+	if jp != "" && !fallbackJpSuppress[name] {
+		variants = append(variants, jpSynonymAlts(name, jp)...)
+	}
+	p := "(?:" + strings.Join(variants, "|") + ")"
+	if guard, ok := nameKwGuards[name]; ok {
+		p = guard + p
+	}
+	return p
+}
+
+// buildCNFallback: mechanical transform of the CN name (synonym replacement
+// table + optional spaces + trailing group wrap).
+func buildCNFallback(name string) string {
+	if alt, ok := fallbackSpecial[name]; ok {
+		return "(?:" + alt + ")"
+	}
+	type token struct {
+		text  string
+		group bool
+	}
+	tokens := []token{{name, false}}
+	for _, rep := range fallbackReplacements {
+		var out []token
+		changed := false
+		for _, t := range tokens {
+			if t.group || !strings.Contains(t.text, rep.from) {
+				out = append(out, t)
+				continue
+			}
+			changed = true
+			segs := strings.Split(t.text, rep.from)
+			for i, s := range segs {
+				if s != "" {
+					out = append(out, token{s, false})
+				}
+				if i < len(segs)-1 {
+					out = append(out, token{"(?:" + rep.to + ")", true})
+				}
+			}
+		}
+		if changed {
+			tokens = out
+		}
+	}
+	pattern := ""
+	// Wrap a trailing plain keyword segment so the pattern always ends with a
+	// `(?:...)` group; regexes.js inserts fullwidth-space tolerance only inside
+	// the last group.
+	if !tokens[len(tokens)-1].group {
+		tokens[len(tokens)-1].text = "(?:" + tokens[len(tokens)-1].text + ")"
+	}
+	for _, t := range tokens {
+		pattern += t.text
+	}
+	return strings.ReplaceAll(pattern, " ", "(?: ?)")
+}
+
+// jpSynonymAlts: official JP synonyms -> regex alternatives. Spaces become
+// optional; a few suffix variants (ディレクター→監督, 補佐→補, 制作/製作 before
+// 進行, サブキャラ→副キャラ) close the surfaces curated assertions carve out.
+func jpSynonymAlts(name, jp string) []string {
+	words := strings.FieldsFunc(jp, func(r rune) bool { return r == '/' || unicode.IsSpace(r) })
+	var syns []string
+	for i := 0; i < len(words); i++ {
+		// consecutive Latin words fuse into one synonym ("Insert Song Lyrics")
+		if isLatinWord(words[i]) && i+1 < len(words) && isLatinWord(words[i+1]) {
+			merged := words[i]
+			for i+1 < len(words) && isLatinWord(words[i+1]) {
+				i++
+				merged += " " + words[i]
+			}
+			syns = append(syns, merged)
+			continue
+		}
+		if jpPrefixWords[words[i]] && i+1 < len(words) {
+			syns = append(syns, words[i]+" "+words[i+1])
+			i++
+		} else {
+			syns = append(syns, words[i])
+		}
+	}
+	var out []string
+	addSyn := func(s string) {
+		if skipJPSynonym(s) {
+			return
+		}
+		// unofficial spellings starting with 監督 would match inside
+		// 作画監督補佐 / (3D)CG監督補佐 etc.; guard them like the curated
+		// pseudo position does with (?<!作画).
+		guard := ""
+		if strings.HasPrefix(s, "監督") {
+			guard = "(?<!作画|CGI|3DCG|CG)"
+		}
+		out = append(out, "(?:"+guard+strings.ReplaceAll(s, " ", "(?: ?)")+")")
+	}
+	for _, s := range syns {
+		variants := []string{s}
+		if strings.HasSuffix(s, "ディレクター") {
+			variants = append(variants, strings.TrimSuffix(s, "ディレクター")+"監督")
+		}
+		if strings.Contains(s, "補佐") {
+			variants = append(variants, strings.Replace(s, "補佐", "補", 1))
+		}
+		if strings.Contains(s, "進行") {
+			variants = append(variants, strings.Replace(s, "進行", "(?:制作|製作)?進行", 1))
+		}
+		if strings.HasPrefix(s, "サブキャラクター") {
+			variants = append(variants, strings.Replace(s, "サブ", "副", 1))
+		}
+		for _, v := range variants {
+			addSyn(v)
+		}
+		// composites like "OP・ED アニメーション制作": curated lookbehind
+		// excludes by OP・ED/OP/ED prefix, so expand per prefix and add the
+		// アニメ short form.
+		for _, prefix := range sortedStringKeys(jpPrefixVariants) {
+			rest, ok := strings.CutPrefix(s, prefix+" ")
+			if !ok {
+				continue
+			}
+			for _, pv := range jpPrefixVariants[prefix] {
+				addSyn(pv + " " + rest)
+				if strings.Contains(rest, "アニメーション") {
+					addSyn(pv + " " + strings.Replace(rest, "アニメーション", "アニメ", 1))
+				}
+			}
+		}
+	}
+	// dedupe identical alternatives (expanded prefix variants can collide
+	// with the base synonym)
+	seen := map[string]bool{}
+	dedup := make([]string, 0, len(out))
+	for _, v := range out {
+		if seen[v] {
+			continue
+		}
+		seen[v] = true
+		dedup = append(dedup, v)
+	}
+	return dedup
+}
+
+// skipJPSynonym drops standalone words without kanji that are too short
+// (2D, ワークス) — they would false-match generic text like studio names.
+func skipJPSynonym(v string) bool {
+	if len([]rune(v)) < 5 && !containsKanji(v) {
+		return true
+	}
+	return false
+}
+
+func isLatinWord(w string) bool {
+	for _, r := range w {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-':
+		default:
+			return false
+		}
+	}
+	return len(w) > 0
+}
+
+func containsKanji(s string) bool {
+	for _, r := range s {
+		if r >= 0x4e00 && r <= 0x9fff {
+			return true
+		}
+	}
+	return false
+}
+
+func generateStaffFallbackPositions(staffYAML []byte, outDir string) {
+	var data StaffYAML
+	if err := yaml.Unmarshal(staffYAML, &data); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse subject_staffs.yml: %v\n", err)
+		os.Exit(1)
+	}
+	positions := data.Define.Types["anime"]
+	if len(positions) == 0 {
+		fmt.Fprintln(os.Stderr, "No anime staff positions in subject_staffs.yml")
+		os.Exit(1)
+	}
+
+	official := map[string]bool{}
+	jpNames := map[string]string{}
+	for _, ps := range positions {
+		official[ps.CN] = true
+		jpNames[ps.CN] = ps.JP
+	}
+
+	curated := map[string]bool{}
+	curatedData, err := os.ReadFile(filepath.Join(outDir, "positions.js"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to read positions.js: %v\n", err)
+		os.Exit(1)
+	}
+	curatedRe := regexp.MustCompile(`name: '([^']+)'`)
+	for _, m := range curatedRe.FindAllStringSubmatch(string(curatedData), -1) {
+		curated[m[1]] = true
+	}
+	synthetic := map[string]bool{"監督補佐": true}
+	for name := range curated {
+		if !official[name] && !synthetic[name] {
+			fmt.Fprintf(os.Stderr, "Stale curated position name (not in subject_staffs.yml): %s\n", name)
+		}
+	}
+
+	jsQuote := func(s string) string { return "'" + strings.ReplaceAll(s, "'", "\\'") + "'" }
+
+	var sb strings.Builder
+	sb.WriteString("// Generated by `go generate ./internal/model/` (bgq/cmd/gen-model) from bangumi/common subject_staffs.yml.\n")
+	sb.WriteString("// Curated patterns live in positions.js; do not edit generated entries by hand.\n")
+	sb.WriteString("export const FALLBACK_POSITIONS = [\n")
+	generated := 0
+	for _, code := range sortedIntKeys(positions) {
+		name := positions[code].CN
+		if curated[name] {
+			continue
+		}
+		if _, ok := fallbackSkip[name]; ok {
+			continue
+		}
+		sb.WriteString("  { name: " + jsQuote(name) + ", pattern: " + jsQuote(buildFallbackPattern(name, jpNames[name])) + " },\n")
+		generated++
+	}
+	sb.WriteString("];\n")
+	writeToFile(filepath.Join(outDir, "positions.generated.js"), sb.String())
+	fmt.Printf("  %d fallback positions generated\n", generated)
 }
 
 // --- Helpers ---

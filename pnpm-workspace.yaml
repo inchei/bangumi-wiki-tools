@@ -2,6 +2,7 @@ packages:
   - 'bgq/frontend'
   - 'wikiBatch'
   - 'wikiMissingPositions'
+  - 'wikiEpStaffRelate'
   - 'wikiPersonAlias'
 
 allowBuilds:

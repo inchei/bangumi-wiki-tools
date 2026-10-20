@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Bangumi (bgm.tv) wiki automation monorepo: `bgq/` (Go CLI + Svelte Web UI over DuckDB), root Python scripts, and 4 Tampermonkey userscripts (`wikiBatch`, `wikiPersonAlias`, `wikiMissingPositions`, plus `filters/` YAML configs run in CI).
+Bangumi (bgm.tv) wiki automation monorepo: `bgq/` (Go CLI + Svelte Web UI over DuckDB), root Python scripts, and 5 Tampermonkey userscripts (`wikiBatch`, `wikiEpStaffRelate`, `wikiPersonAlias`, `wikiMissingPositions`, plus `filters/` YAML configs run in CI).
 License: GPL-3.0-only (see LICENSE).
 
 bgq CSV output feeds into wikiBatch for batch editing.
@@ -41,7 +41,7 @@ unzip duckdb.zip -d bgq/bin/
 pnpm — one root workspace (`bgq/frontend`, `wikiBatch`, `wikiPersonAlias`, `wikiMissingPositions`), one lockfile. Install from the repo root; commands inside a package dir still work.
 
 ```bash
-pnpm install          # installs all 4 projects
+pnpm install          # installs all 5 projects
 pnpm -r update        # update deps
 pnpm audit
 
@@ -55,7 +55,7 @@ pnpm format           # Prettier
 pnpm format:check
 ```
 
-Pre-commit hook (`.husky/pre-commit`) runs automatically and is where quality is enforced: Go (gofmt + vet + golangci-lint + test), wikiBatch/wikiMissingPositions (bump version → lint → build, auto-adds `dist/`), wikiPersonAlias (bump version → lint), bgq frontend (lint-staged + knip).
+Pre-commit hook (`.husky/pre-commit`) runs automatically and is where quality is enforced: Go (gofmt + vet + golangci-lint + test), wikiBatch/wikiEpStaffRelate/wikiMissingPositions (bump version → lint → build, auto-adds `dist/`), wikiPersonAlias (bump version → lint), bgq frontend (lint-staged + knip).
 Setup after clone: `git config core.hooksPath .husky`.
 
 ## Conventions

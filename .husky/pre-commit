@@ -80,6 +80,7 @@ maybe_bump() {
 GO_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' || true)
 FE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^bgq/frontend/src/' || true)
 MP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wikiMissingPositions/src/' || true)
+ESR_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wikiEpStaffRelate/src/' || true)
 PA_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wikiPersonAlias/' || true)
 WB_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wikiBatch/src/' || true)
 
@@ -110,6 +111,18 @@ if [ -n "$MP_FILES" ]; then
   fi
   cd ..
   git add wikiMissingPositions/src/ wikiMissingPositions/header.js wikiMissingPositions/dist/wikiMissingPositions.user.js
+fi
+
+if [ -n "$ESR_FILES" ]; then
+  maybe_bump wikiEpStaffRelate/header.js "wikiEpStaffRelate"
+  cd wikiEpStaffRelate
+  if ! (pnpm lint && pnpm format && pnpm format:check && pnpm build); then
+    cd ..
+    git checkout -- wikiEpStaffRelate/header.js
+    exit 1
+  fi
+  cd ..
+  git add wikiEpStaffRelate/src/ wikiEpStaffRelate/header.js wikiEpStaffRelate/dist/wikiEpStaffRelate.user.js
 fi
 
 if [ -n "$PA_FILES" ]; then

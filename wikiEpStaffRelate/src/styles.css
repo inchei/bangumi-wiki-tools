@@ -1,0 +1,236 @@
+#crtRelateSubjects li:target {
+  box-shadow: inset 0 0 0 3px oklch(0.62 0.1 255);
+  scroll-margin-block-start: 60px;
+}
+
+/* 提示框容器样式 */
+#wikiEpRelate.staff-tip-box {
+  position: fixed;
+  width: min(380px, 100vw);
+  backdrop-filter: blur(10px);
+  background: rgba(254, 254, 254, 0.8);
+  color: #000;
+  border-radius: 15px;
+  background-clip: padding-box;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 5px 30px 10px rgba(80, 80, 80, 0.5);
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* 警告提示样式 */
+#wikiEpRelate .staff-warning-section {
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  background: rgba(255, 248, 225, 0.6);
+  border: 1px solid rgba(255, 153, 0, 0.3);
+  border-radius: 8px;
+  color: #856404;
+  overflow-wrap: break-word;
+}
+#wikiEpRelate .staff-warning-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 提示框拖动手柄 */
+#wikiEpRelate .staff-tip-handle {
+  height: 36px;
+  line-height: 36px;
+  padding: 0 16px;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 15px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-color, #f09199);
+  cursor: move;
+  user-select: none;
+}
+
+/* 提示框内容容器 */
+#wikiEpRelate .staff-tip-content {
+  padding: 12px 16px;
+  max-height: 400px;
+  overflow-y: auto;
+  font-size: 13px;
+}
+
+/* 提示框标题 */
+#wikiEpRelate .staff-tip-title {
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 14px;
+  color: inherit;
+}
+#wikiEpRelate .staff-tip-title.new {
+  color: #0a6e1e;
+}
+#wikiEpRelate .staff-tip-title.existing {
+  color: #0d5b68;
+}
+#wikiEpRelate .staff-tip-title.unmatched {
+  color: #a0222e;
+}
+
+/* 记录列表容器 */
+#wikiEpRelate .staff-record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+/* 统一记录项基础样式 */
+#wikiEpRelate .staff-record-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  color: inherit !important;
+  text-decoration: none;
+  transition: background 0.2s ease;
+  overflow-wrap: break-word;
+  position: relative;
+}
+
+/* 新增参与项 */
+#wikiEpRelate .staff-record-item.new {
+  background: rgba(240, 255, 244, 0.6);
+  border: 1px solid rgba(40, 167, 69, 0.2);
+}
+#wikiEpRelate .staff-record-item.new:hover {
+  background: rgba(230, 255, 233, 0.8);
+}
+
+/* 已有参与项 */
+#wikiEpRelate .staff-record-item.existing {
+  background: rgba(240, 248, 255, 0.6);
+  border: 1px solid rgba(23, 162, 184, 0.2);
+}
+#wikiEpRelate .staff-record-item.existing:hover {
+  background: rgba(230, 242, 255, 0.8);
+}
+
+/* 未匹配记录项 */
+#wikiEpRelate .staff-record-item.unmatched {
+  padding: 8px 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  background: rgba(255, 248, 248, 0.6);
+  color: #a0222e;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  transition: background 0.2s ease;
+}
+#wikiEpRelate .staff-record-item.unmatched:hover {
+  background: rgba(255, 235, 235, 0.8);
+}
+
+/* 记录项名称强调 */
+#wikiEpRelate .staff-person-name {
+  font-weight: 500;
+  color: inherit;
+}
+
+/* 行侧按钮点击后，对应面板记录的闪烁定位环 */
+#wikiEpRelate .staff-record-item.staff-row-jump-flash {
+  box-shadow: inset 0 0 0 3px oklch(0.62 0.12 80);
+}
+
+#wikiEpRelate .staff-tip-content > details > details {
+  margin-left: 1.5em;
+}
+
+/* 关联行高亮：别名新增 / 同名重复 / 集数有改，同一行命中多个时叠加竖条纹。
+   三色各自用 oklch，同主题统一亮度，只差色相，深浅都贴合主题 */
+#crtRelateSubjects li.staff-alias-li {
+  background: oklch(0.92 0.05 255);
+}
+/* 行侧跳转按钮：定位结果面板对应记录 */
+#crtRelateSubjects li .staff-row-jump {
+  margin-left: 0.5em;
+  padding: 0 0.3em;
+  border: none;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+  color: oklch(0.32 0.05 255);
+  background: oklch(0.92 0.05 255);
+}
+#crtRelateSubjects li.staff-repeat-li {
+  background: oklch(0.92 0.05 128);
+}
+#crtRelateSubjects li.staff-changed-li {
+  background: oklch(0.92 0.05 100);
+}
+#crtRelateSubjects li.staff-alias-li.staff-repeat-li {
+  background: repeating-linear-gradient(
+    90deg,
+    oklch(0.92 0.05 255) 0 12px,
+    oklch(0.92 0.05 128) 12px 24px
+  );
+}
+
+/* 夜间模式适配 */
+html[data-theme='dark'] #wikiEpRelate.staff-tip-box {
+  background: rgba(40, 40, 40, 0.8);
+  color: #fff;
+  box-shadow: 0 5px 30px 10px rgba(0, 0, 0, 0.2);
+}
+html[data-theme='dark'] #wikiEpRelate .staff-warning-section {
+  background: rgba(60, 40, 0, 0.4);
+  border-color: rgba(255, 153, 0, 0.5);
+  color: #ffd700;
+}
+html[data-theme='dark'] #wikiEpRelate .staff-tip-title {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+html[data-theme='dark'] #wikiEpRelate .staff-tip-title.new {
+  color: #51cf66;
+}
+html[data-theme='dark'] #wikiEpRelate .staff-tip-title.existing {
+  color: #4dd0e1;
+}
+html[data-theme='dark'] #wikiEpRelate .staff-tip-title.unmatched {
+  color: #e57373;
+}
+html[data-theme='dark'] #crtRelateSubjects li.staff-alias-li {
+  background: oklch(0.32 0.05 255);
+}
+html[data-theme='dark'] #crtRelateSubjects li .staff-row-jump {
+  color: oklch(0.9 0.05 255);
+  background: oklch(0.32 0.05 255);
+}
+html[data-theme='dark'] #crtRelateSubjects li.staff-repeat-li {
+  background: oklch(0.32 0.04 128);
+}
+html[data-theme='dark'] #crtRelateSubjects li.staff-changed-li {
+  background: oklch(0.32 0.04 100);
+}
+html[data-theme='dark'] #crtRelateSubjects li.staff-alias-li.staff-repeat-li {
+  background: repeating-linear-gradient(
+    90deg,
+    oklch(0.32 0.05 255) 0 12px,
+    oklch(0.32 0.04 128) 12px 24px
+  );
+}
+html[data-theme='dark'] #wikiEpRelate .staff-record-item.new {
+  background: rgba(25, 65, 35, 0.4);
+  border-color: rgba(76, 175, 80, 0.4);
+}
+html[data-theme='dark'] #wikiEpRelate .staff-record-item.new:hover {
+  background: rgba(25, 65, 35, 0.6);
+}
+html[data-theme='dark'] #wikiEpRelate .staff-record-item.existing {
+  background: rgba(30, 45, 65, 0.4);
+  border-color: rgba(33, 150, 243, 0.4);
+}
+html[data-theme='dark'] #wikiEpRelate .staff-record-item.existing:hover {
+  background: rgba(30, 45, 65, 0.6);
+}
+html[data-theme='dark'] #wikiEpRelate .staff-record-item.unmatched {
+  background: rgba(65, 30, 35, 0.4);
+  border-color: rgba(244, 67, 54, 0.4);
+}
+html[data-theme='dark'] #wikiEpRelate .staff-record-item.unmatched:hover {
+  background: rgba(65, 30, 35, 0.6);
+}

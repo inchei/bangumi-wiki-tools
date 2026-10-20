@@ -48,6 +48,16 @@
 
 [文档](wikiMissingPositions/README.md) · [Bangumi 讨论](https://bgm.tv/group/topic/465351)
 
+### wikiEpStaffRelate
+
+用户脚本，根据章节简介解析制作人员并一键填写参与集数、补建人物关联。
+
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiEpStaffRelate/dist/wikiEpStaffRelate.user.js>
+
+或启用[组件](https://bgm.tv/dev/app/4948)。
+
+[文档](wikiEpStaffRelate/README.md) · [GreasyFork](https://greasyfork.org/zh-CN/scripts/552493) · [Bangumi 讨论](https://bgm.tv/group/topic/439326)
+
 ### Python 脚本
 
 使用 uv 进行依赖管理，运行脚本使用 `uv run script.py`。
