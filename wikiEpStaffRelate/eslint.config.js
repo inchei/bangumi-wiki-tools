@@ -1,8 +1,10 @@
 import js from '@eslint/js';
 import globals from 'globals';
+import prettier from 'eslint-config-prettier';
 
 export default [
   js.configs.recommended,
+  prettier,
   { ignores: ['dist/'] },
   {
     languageOptions: {
@@ -20,9 +22,6 @@ export default [
       },
     },
     rules: {
-      indent: ['error', 2],
-      semi: 'error',
-      quotes: ['error', 'single'],
       'comma-spacing': 'error',
       'keyword-spacing': 'error',
       'brace-style': 'error',

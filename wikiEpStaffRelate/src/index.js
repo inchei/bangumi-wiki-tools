@@ -27,64 +27,68 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
     const name = params.get('name');
     document.querySelector('#crt_name').value = name;
   } else if (location.pathname.match(/^\/subject\/\d+\/add_related\/person$/)) {
-    if (!document.querySelector('.focus').classList.contains('anime')) return;
-
+    const isAnime = document.querySelector('.focus').classList.contains('anime');
     const subjectId = location.pathname.split('/')[2];
-    const btn = document.createElement('button');
-    btn.textContent = '获取章节简介填写参与';
-    btn.id = 'epDescStaff';
-    btn.style = 'margin:5px;float:right';
-    btn.addEventListener('click', async () => {
-      try {
-        btn.disabled = true;
-        btn.textContent = '获取章节中……';
+    const catBox = document.querySelector('#indexCatBox');
 
-        const allEps = [];
-        let offset = 0;
-        const limit = 100;
+    let btn = null;
+    if (isAnime) {
+      btn = document.createElement('button');
+      btn.textContent = '获取章节简介填写参与';
+      btn.id = 'epDescStaff';
+      btn.style = 'margin:5px;float:right';
+      btn.addEventListener('click', async () => {
+        try {
+          btn.disabled = true;
+          btn.textContent = '获取章节中……';
 
-        while (true) {
-          const eps = await getEps(subjectId, offset);
-          if (!eps || eps.length === 0) break;
+          const allEps = [];
+          let offset = 0;
+          const limit = 100;
 
-          allEps.push(...eps);
-          if (eps.length < limit) break;
+          while (true) {
+            const eps = await getEps(subjectId, offset);
+            if (!eps || eps.length === 0) break;
 
-          offset += limit;
+            allEps.push(...eps);
+            if (eps.length < limit) break;
+
+            offset += limit;
+          }
+
+          if (!allEps.length) throw new Error('未获取到章节数据');
+
+          const epData = {},
+            epDescs = {};
+          for (const ep of allEps) {
+            const epTypes = ['', 'SP', 'OP', 'ED'];
+            const epLabel = `${epTypes[ep.type]}${ep.sort}`;
+
+            epData[epLabel] = ep;
+            epDescs[epLabel] = ep.desc;
+          }
+          setEpsCache(epData);
+
+          btn.textContent = '解析参与中……';
+          const [staffInfo, noStaffEps] = extractStaffInfo(epDescs);
+
+          if (Object.keys(staffInfo).length || noStaffEps.length) {
+            await updAppearEps(staffInfo, noStaffEps);
+          } else {
+            throw new Error('未解析到任何集数的人员信息');
+          }
+
+          btn.textContent = `解析完成！共处理 ${allEps.length} 集`;
+        } catch (e) {
+          alert(`获取失败：${e.message}`);
+          btn.textContent = '获取失败，点击重试';
+          btn.disabled = false;
         }
+      });
+      catBox.after(btn);
+    }
 
-        if (!allEps.length) throw new Error('未获取到章节数据');
-
-        const epData = {},
-          epDescs = {};
-        for (const ep of allEps) {
-          const epTypes = ['', 'SP', 'OP', 'ED'];
-          const epLabel = `${epTypes[ep.type]}${ep.sort}`;
-
-          epData[epLabel] = ep;
-          epDescs[epLabel] = ep.desc;
-        }
-        setEpsCache(epData);
-
-        btn.textContent = '解析参与中……';
-        const [staffInfo, noStaffEps] = extractStaffInfo(epDescs);
-
-        if (Object.keys(staffInfo).length || noStaffEps.length) {
-          await updAppearEps(staffInfo, noStaffEps);
-        } else {
-          throw new Error('未解析到任何集数的人员信息');
-        }
-
-        btn.textContent = `解析完成！共处理 ${allEps.length} 集`;
-      } catch (e) {
-        alert(`获取失败：${e.message}`);
-        btn.textContent = '获取失败，点击重试';
-        btn.disabled = false;
-      }
-    });
-    document.querySelector('#indexCatBox').after(btn);
-
-    // 根据infobox关联：挂在获取章节按钮上方
+    // 根据 infobox 关联：动画页挂在获取章节按钮上方，其他类型直接放类型栏后
     const infoboxBtn = document.createElement('button');
     infoboxBtn.textContent = '根据infobox关联';
     infoboxBtn.id = 'infoboxStaff';
@@ -111,10 +115,14 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
         infoboxBtn.disabled = false;
       }
     });
-    btn.insertAdjacentElement('beforebegin', infoboxBtn);
+    if (btn) {
+      btn.insertAdjacentElement('beforebegin', infoboxBtn);
+    } else {
+      catBox.after(infoboxBtn);
+    }
 
     const params = new URLSearchParams(location.search);
-    if (params.has('staffs')) {
+    if (params.has('staffs') && btn) {
       try {
         const staffInfo = JSON.parse(params.get('staffs'));
 
