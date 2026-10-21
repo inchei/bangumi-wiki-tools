@@ -380,13 +380,16 @@ function renderResults(content, subjectsByType, episodesData, encodedName, perso
   }
 
   html += `<div class="bgm-mp-popup-actions">
-      <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
+      <button class="bgm-mp-btn" id="bgm-mp-create-btn">创建人物</button>
     </div>`;
 
   content.innerHTML = html;
 
   document.querySelector('#bgm-mp-create-btn').onclick = () => {
-    if (!hasData) return;
+    if (!hasData) {
+      window.open(`/person/new?name=${encodeURIComponent(personName)}`);
+      return;
+    }
     const allSubjects = {};
     for (const [t, data] of Object.entries(subjectsByType)) {
       for (const [sid, entry] of Object.entries(data)) {

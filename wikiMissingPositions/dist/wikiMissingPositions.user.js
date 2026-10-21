@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.3.5
+// @version      0.3.6
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1589,11 +1589,14 @@ document.head.appendChild(styleEl);
       html = '<div class="bgm-mp-empty-hint">未找到缺失关联</div>';
     }
     html += `<div class="bgm-mp-popup-actions">
-      <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>创建人物</button>
+      <button class="bgm-mp-btn" id="bgm-mp-create-btn">创建人物</button>
     </div>`;
     content.innerHTML = html;
     document.querySelector("#bgm-mp-create-btn").onclick = () => {
-      if (!hasData) return;
+      if (!hasData) {
+        window.open(`/person/new?name=${encodeURIComponent(personName)}`);
+        return;
+      }
       const allSubjects = {};
       for (const [t, data] of Object.entries(subjectsByType)) {
         for (const [sid, entry] of Object.entries(data)) {
