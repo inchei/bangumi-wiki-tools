@@ -267,6 +267,14 @@
     min-height: 24px;
   }
 
+  .op-btn:first-child {
+    border-radius: 3px 0 0 3px;
+  }
+
+  .op-btn:last-child {
+    border-radius: 0 3px 3px 0;
+  }
+
   .op-btn:focus-within {
     outline: 2px solid var(--accent-strong);
     outline-offset: 1px;

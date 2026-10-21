@@ -1189,3 +1189,84 @@ morph-icon.spin svg {
     box-shadow: 0 4px 16px rgb(233 110 122 / 35%);
     transform: scale(1.05);
 }
+
+/* ===== Forced Colors (Windows High Contrast) ===== */
+@media (forced-colors: active) {
+    #bgm-tool-container,
+    #bgm-tool-container[data-theme="dark"] {
+        --accent: Highlight;
+        --accent-hover: Highlight;
+        --accent-strong: Highlight;
+        --accent-strong-hover: Highlight;
+        --on-accent-strong: HighlightText;
+        --accent-light: Canvas;
+        --accent-border: ButtonBorder;
+        --white: Canvas;
+        --bg: Canvas;
+        --bg-alt: Canvas;
+        --text: CanvasText;
+        --text-secondary: CanvasText;
+        --text-placeholder: GrayText;
+        --border: CanvasText;
+        --border-light: CanvasText;
+        --link: LinkText;
+        --link-hover: LinkText;
+    }
+
+    #bgm-tool-container button.primary .kbd-hint {
+        background: transparent;
+        border-color: HighlightText;
+    }
+
+    .toggle-slider {
+        background-color: Canvas;
+        border: 1px solid CanvasText;
+    }
+
+    .toggle-slider::before {
+        background-color: ButtonText;
+        box-shadow: none;
+    }
+
+    .toggle-switch input:focus-visible + .toggle-slider {
+        box-shadow: none;
+        outline: 2px solid Highlight;
+        outline-offset: 1px;
+    }
+
+    .method-option-group input[type="radio"]:checked + label {
+        background: Highlight;
+        color: HighlightText;
+        border-color: HighlightText;
+    }
+
+    .cm-insertedLine,
+    .cm-deletedLine {
+        text-decoration: none;
+    }
+
+    #bgm-tool-container .cm-changedLineGutter,
+    #bgm-tool-container .cm-deletedLineGutter,
+    #bgm-tool-container .cm-inlineChangedLineGutter {
+        background: Highlight;
+    }
+
+    #bgm-tool-container .cm-changedText {
+        text-decoration: underline;
+        text-decoration-thickness: 2px;
+        text-decoration-color: Highlight;
+    }
+
+    #bgm-tool-container .cm-deletedText {
+        text-decoration: line-through;
+        text-decoration-thickness: 2px;
+        text-decoration-color: Highlight;
+    }
+
+    #bgm-float-button {
+        background: Highlight;
+        color: HighlightText;
+        border: 1px solid ButtonBorder;
+        box-sizing: border-box;
+    }
+}

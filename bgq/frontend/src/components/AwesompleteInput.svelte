@@ -426,4 +426,16 @@
     font-weight: 600;
     padding: 0;
   }
+
+  @media (forced-colors: active) {
+    .aw-input :global(~ .aw-drop > ul > li:hover) {
+      background: Highlight;
+      color: HighlightText;
+    }
+
+    .aw-input :global(~ .aw-drop > ul > li:hover mark) {
+      background: transparent;
+      color: HighlightText;
+    }
+  }
 </style>

@@ -68,6 +68,7 @@ Setup after clone: `git config core.hooksPath .husky`.
 - Quote-escape user-controlled output columns/sort labels (`quotedLabel()` in `internal/query/builder_util.go`), never interpolate.
 - In db mode, `Engine.executeSQL` prepends `SET enable_external_access=false`; HTTP handlers return a generic `查询失败（请求 ID: xxxx）` with the detail logged server-side — never put `err.Error()` in a response.
 - jscpd runs on-demand only (not in deps/hooks/CI); test fixtures and Svelte branches duplicate by design.
+- Do not use Playwright/headless browsers unless explicitly requested.
 
 ## Layout
 

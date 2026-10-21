@@ -74,4 +74,10 @@
     outline: 2px solid var(--accent-strong);
     outline-offset: 0;
   }
+
+  @media (forced-colors: active) {
+    .drag-handle {
+      color: ButtonText;
+    }
+  }
 </style>

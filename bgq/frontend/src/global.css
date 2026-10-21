@@ -470,6 +470,14 @@ body.dnd-active.dnd-cursor-forbid * {
   opacity: 0.45;
 }
 
+@media (forced-colors: active) {
+  .dnd-lift {
+    opacity: 0.75;
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+}
+
 .dnd-before {
   position: relative;
 }
@@ -510,4 +518,36 @@ html,
 body {
   scrollbar-width: auto;
   scrollbar-color: auto;
+}
+
+/* ===== Windows High Contrast (forced-colors: active) ===== */
+@media (forced-colors: active) {
+  :root,
+  [data-theme="dark"] {
+    --accent: Highlight;
+    --accent-hover: Highlight;
+    --accent-strong: Highlight;
+    --accent-strong-hover: Highlight;
+    --on-accent-strong: HighlightText;
+    --accent-light: Canvas;
+    --accent-border: ButtonBorder;
+    --link: LinkText;
+    --link-hover: LinkText;
+    --white: Canvas;
+    --bg: Canvas;
+    --bg-alt: Canvas;
+    --bg-secondary: Canvas;
+    --text: CanvasText;
+    --text-secondary: CanvasText;
+    --text-placeholder: GrayText;
+    --border: CanvasText;
+    --border-light: CanvasText;
+    --dropdown-bg: Canvas;
+  }
+
+  .input:focus,
+  .select:focus {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
 }

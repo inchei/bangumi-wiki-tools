@@ -162,4 +162,11 @@
       display: none;
     }
   }
+
+  @media (forced-colors: active) {
+    .splitter::before {
+      background: CanvasText;
+      width: 1px;
+    }
+  }
 </style>
