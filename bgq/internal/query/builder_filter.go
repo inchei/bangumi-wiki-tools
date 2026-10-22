@@ -63,21 +63,20 @@ func (b *SQLBuilder) metaTagFilter(f *config.TagFilter) (string, error) {
 
 // buildCondition generates a SQL comparison expression.
 func (b *SQLBuilder) buildCondition(expr, op, value string) (string, error) {
+	text := varcharNoCR(expr)
 	switch op {
 	case "eq":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) = '%s'", expr, EscapeLiteral(value)), nil
+		return fmt.Sprintf("%s = '%s'", text, EscapeLiteral(value)), nil
 	case "contains":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) LIKE '%%%s%%' ESCAPE '\\'", expr, escapeLike(value)), nil
+		return fmt.Sprintf("%s LIKE '%%%s%%' ESCAPE '\\'", text, escapeLike(value)), nil
 	case "not_contains":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%%s%%' ESCAPE '\\' AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, escapeLike(value), expr), nil
+		return fmt.Sprintf("%s NOT LIKE '%%%s%%' ESCAPE '\\' AND TRIM(%s) <> ''", text, escapeLike(value), text), nil
 	case "regex":
-		// CAST is required: regexp_matches has no overload for non-VARCHAR
-		// first arguments (e.g. DOUBLE columns like s.score).
-		return fmt.Sprintf("regexp_matches(CAST(%s AS VARCHAR), '%s')", expr, EscapeLiteral(value)), nil
+		return fmt.Sprintf("regexp_matches(%s, '%s')", text, EscapeLiteral(value)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(CAST(%s AS VARCHAR), '%s') AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, EscapeLiteral(value), expr), nil
+		return fmt.Sprintf("NOT regexp_matches(%s, '%s') AND TRIM(%s) <> ''", text, EscapeLiteral(value), text), nil
 	case "empty":
-		return fmt.Sprintf("COALESCE(CAST(%s AS VARCHAR), '') = ''", expr), nil
+		return fmt.Sprintf("COALESCE(%s, '') = ''", text), nil
 	case "gt":
 		num, err := safeNum(value)
 		if err != nil {

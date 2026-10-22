@@ -4,7 +4,7 @@ subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM
 SELECT c."character_id", c."name"
 FROM characters c
 WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1) AND
- (SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') =
+ (SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') =
  (SELECT COUNT(*) FROM subject_characters subject_characters WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1)
 LIMIT 10
 character_character_any	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -12,28 +12,28 @@ characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'
 subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name"
 FROM characters c
-WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 character_character_count	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
 subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name"
 FROM characters c
-WHERE CAST((SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
+WHERE CAST((SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
 LIMIT 10
 character_character_none	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
 subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name"
 FROM characters c
-WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 character_output	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
-SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT c."name" AS "_v", c.character_id AS "_ord" FROM subject_characters sc LEFT JOIN characters c ON sc.character_id = c.character_id WHERE sc.subject_id = s.id AND sc.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\' ORDER BY c.character_id LIMIT 1) t) AS "主角.name", (SELECT COUNT(*) FROM subject_characters sc LEFT JOIN characters c ON sc.character_id = c.character_id WHERE sc.subject_id = s.id AND sc.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\') AS "主角.count"
+SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT c."name" AS "_v", c.character_id AS "_ord" FROM subject_characters sc LEFT JOIN characters c ON sc.character_id = c.character_id WHERE sc.subject_id = s.id AND sc.type = 1 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\' ORDER BY c.character_id LIMIT 1) t) AS "主角.name", (SELECT COUNT(*) FROM subject_characters sc LEFT JOIN characters c ON sc.character_id = c.character_id WHERE sc.subject_id = s.id AND sc.type = 1 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS "主角.count"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 character_person_character_all	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
@@ -243,10 +243,10 @@ character_person_subject_output	WITH subjects AS (SELECT "id", "type", "name", "
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
 person_characters AS (SELECT "person_id", "subject_id", "character_id", "type", "summary" FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
-SELECT c."character_id", c."name", (SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."id") FROM (SELECT DISTINCT rs.id AS "id", rs."name" AS "_v" FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN persons p ON pc.person_id = p.person_id WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(p.name AS VARCHAR) LIKE '%水树%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000 ORDER BY rs.id LIMIT 1) "agg") AS "CV.s.name"
+SELECT c."character_id", c."name", (SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."id") FROM (SELECT DISTINCT rs.id AS "id", rs."name" AS "_v" FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN persons p ON pc.person_id = p.person_id WHERE pc.character_id = c.character_id AND pc.type = 0 AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%水树%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000 ORDER BY rs.id LIMIT 1) "agg") AS "CV.s.name"
 FROM characters c
 WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN persons p ON pc.person_id = p.person_id LEFT JOIN subjects rs ON pc.subject_id = rs.id
-			 WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(p.name AS VARCHAR) LIKE '%水树%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000)
+			 WHERE pc.character_id = c.character_id AND pc.type = 0 AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%水树%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000)
 LIMIT 10
 character_relation_character_all	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
@@ -291,7 +291,7 @@ characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'
 SELECT s."id", s."name"
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1) AND
- (SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\') =
+ (SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') =
  (SELECT COUNT(*) FROM subject_characters subject_characters WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1)
 LIMIT 10
 character_subject_any	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -299,83 +299,83 @@ subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 character_subject_count	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE CAST((SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
+WHERE CAST((SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
 LIMIT 10
 character_subject_none	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 default_cols_character	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name", regexp_extract(c.infobox, '(?i)\|简体中文名\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1) AS "简体中文名"
 FROM characters c
-WHERE CAST(c."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+WHERE replace(CAST(c."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\'
 LIMIT 10
 default_cols_person	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name", regexp_extract(p.infobox, '(?i)\|简体中文名\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1) AS "简体中文名"
 FROM persons p
-WHERE CAST(p."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+WHERE replace(CAST(p."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\'
 LIMIT 10
 episode_all_subject	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT "id" as episode_id, "name", "name_cn", "description", "airdate", "disc", "duration", "subject_id", "sort", "type" FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id) AND
-			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') =
+			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') =
 			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)
 LIMIT 10
 episode_count_subject	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT "id" as episode_id, "name", "name_cn", "description", "airdate", "disc", "duration", "subject_id", "sort", "type" FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE CAST((SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
+WHERE CAST((SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
 LIMIT 10
 episode_none_subject	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT "id" as episode_id, "name", "name_cn", "description", "airdate", "disc", "duration", "subject_id", "sort", "type" FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE NOT EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE NOT EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 episode_output	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT "id" as episode_id, "name", "name_cn", "description", "airdate", "disc", "duration", "subject_id", "sort", "type" FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
-SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT e."name" AS "_v", e.episode_id AS "_ord" FROM episodes e  WHERE e.subject_id = s.id AND TRUE AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\' ORDER BY e.episode_id LIMIT 1) t) AS "episode.name", (SELECT COUNT(*) FROM episodes e  WHERE e.subject_id = s.id AND TRUE AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') AS "episode.count"
+SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT e."name" AS "_v", e.episode_id AS "_ord" FROM episodes e  WHERE e.subject_id = s.id AND TRUE AND replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\' ORDER BY e.episode_id LIMIT 1) t) AS "episode.name", (SELECT COUNT(*) FROM episodes e  WHERE e.subject_id = s.id AND TRUE AND replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS "episode.count"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 episode_subject	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT "id" as episode_id, "name", "name_cn", "description", "airdate", "disc", "duration", "subject_id", "sort", "type" FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 field_character	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name"
 FROM characters c
-WHERE CAST(c."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+WHERE replace(CAST(c."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\'
 LIMIT 10
 field_episode	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT "id" as episode_id, "name", "name_cn", "description", "airdate", "disc", "duration", "subject_id", "sort", "type" FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT e."episode_id", e."name"
 FROM episodes e
-WHERE CAST(e."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+WHERE replace(CAST(e."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\'
 LIMIT 10
 field_person	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE CAST(p."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+WHERE replace(CAST(p."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\'
 LIMIT 10
 field_ref	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
@@ -390,7 +390,7 @@ LIMIT 10
 field_subject	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE CAST(s."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
+WHERE replace(CAST(s."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\'
 LIMIT 10
 logic_or	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
@@ -412,13 +412,13 @@ characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'
 character_relations AS (SELECT "person_type", "person_id", "related_person_id", "relation_type", "spoiler", "ended" FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'crt')
 SELECT c."character_id", c."name"
 FROM characters c
-WHERE EXISTS (SELECT 1 FROM character_relations cr LEFT JOIN characters rc ON cr.related_person_id = rc.character_id WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002) AND CAST(rc.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM character_relations cr LEFT JOIN characters rc ON cr.related_person_id = rc.character_id WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002) AND replace(CAST(rc.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 nested_episode_none	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT "id" as episode_id, "name", "name_cn", "description", "airdate", "disc", "duration", "subject_id", "sort", "type" FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE NOT EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e.type AS VARCHAR) = '2')
+WHERE NOT EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND replace(CAST(e.type AS VARCHAR), chr(13), '') = '2')
 LIMIT 10
 nested_person_character_summary	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
@@ -426,14 +426,14 @@ person_characters AS (SELECT "person_id", "subject_id", "character_id", "type", 
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(c.summary AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0 AND replace(CAST(c.summary AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 nested_person_relation_name	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
 person_relations AS (SELECT "person_type", "person_id", "related_person_id", "relation_type", "spoiler", "ended" FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'prsn')
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE EXISTS (SELECT 1 FROM person_relations pr LEFT JOIN persons rp ON pr.related_person_id = rp.person_id WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015) AND CAST(rp.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM person_relations pr LEFT JOIN persons rp ON pr.related_person_id = rp.person_id WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015) AND replace(CAST(rp.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 nested_staff_person_collects	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
@@ -447,7 +447,7 @@ subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" F
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (2, 1016, 4002) AND CAST(p.summary AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (2, 1016, 4002) AND replace(CAST(p.summary AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 nested_subject_cast_character_summary	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_characters AS (SELECT "character_id", "subject_id", "type", "order" FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
@@ -456,7 +456,7 @@ person_characters AS (SELECT "person_id", "subject_id", "character_id", "type", 
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_characters sc JOIN characters c ON c.character_id = sc.character_id JOIN person_characters pc ON pc.subject_id = sc.subject_id AND pc.character_id = sc.character_id JOIN persons p ON p.person_id = pc.person_id WHERE sc.subject_id = s.id AND CAST(c.summary AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_characters sc JOIN characters c ON c.character_id = sc.character_id JOIN person_characters pc ON pc.subject_id = sc.subject_id AND pc.character_id = sc.character_id JOIN persons p ON p.person_id = pc.person_id WHERE sc.subject_id = s.id AND replace(CAST(c.summary AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 person_character_group_subject_fields	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
@@ -666,10 +666,10 @@ person_character_subject_output	WITH subjects AS (SELECT "id", "type", "name", "
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
 person_characters AS (SELECT "person_id", "subject_id", "character_id", "type", "summary" FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
 characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
-SELECT p."person_id", p."name", (SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."id") FROM (SELECT DISTINCT rs.id AS "id", rs."name" AS "_v" FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(c.name AS VARCHAR) LIKE '%アル%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000 ORDER BY rs.id LIMIT 1) "agg") AS "CV.s.name"
+SELECT p."person_id", p."name", (SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."id") FROM (SELECT DISTINCT rs.id AS "id", rs."name" AS "_v" FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%アル%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000 ORDER BY rs.id LIMIT 1) "agg") AS "CV.s.name"
 FROM persons p
 WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id LEFT JOIN subjects rs ON pc.subject_id = rs.id
-			 WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(c.name AS VARCHAR) LIKE '%アル%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000)
+			 WHERE pc.person_id = p.person_id AND pc.type = 0 AND replace(CAST(c.name AS VARCHAR), chr(13), '') LIKE '%アル%' ESCAPE '\' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000)
 LIMIT 10
 person_relation_output	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
@@ -724,15 +724,15 @@ WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN subjects r
 LIMIT 10
 relation_output	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_relations AS (SELECT "subject_id", "relation_type", "related_subject_id", "order" FROM read_json_auto('$DATA_DIR/subject-relations.jsonlines', format='newline_delimited'))
-SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT rs."name" AS "_v", rs.id AS "_ord" FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs."name" AS VARCHAR) LIKE '%1%' ESCAPE '\' ORDER BY rs.id LIMIT 1) t) AS "单行本.name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT regexp_extract(rs.infobox, '(?i)\|发售日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1) AS "_v", rs.id AS "_ord" FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs."name" AS VARCHAR) LIKE '%1%' ESCAPE '\' ORDER BY rs.id LIMIT 1) t) AS "单行本.发售日"
+SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT rs."name" AS "_v", rs.id AS "_ord" FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%1%' ESCAPE '\' ORDER BY rs.id LIMIT 1) t) AS "单行本.name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT regexp_extract(rs.infobox, '(?i)\|发售日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1) AS "_v", rs.id AS "_ord" FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%1%' ESCAPE '\' ORDER BY rs.id LIMIT 1) t) AS "单行本.发售日"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs."name" AS VARCHAR) LIKE '%1%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%1%' ESCAPE '\')
 LIMIT 10
 relation_output_count	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_relations AS (SELECT "subject_id", "relation_type", "related_subject_id", "order" FROM read_json_auto('$DATA_DIR/subject-relations.jsonlines', format='newline_delimited'))
-SELECT s."id", s."name", (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs."name" AS VARCHAR) LIKE '%1%' ESCAPE '\') AS "单行本.count"
+SELECT s."id", s."name", (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%1%' ESCAPE '\') AS "单行本.count"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs."name" AS VARCHAR) LIKE '%1%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%1%' ESCAPE '\')
 LIMIT 10
 relation_subject_all	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_relations AS (SELECT "subject_id", "relation_type", "related_subject_id", "order" FROM read_json_auto('$DATA_DIR/subject-relations.jsonlines', format='newline_delimited'))
@@ -806,7 +806,7 @@ subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" F
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(subject_persons.appear_eps AS VARCHAR) LIKE '%1,2,3%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(subject_persons.appear_eps AS VARCHAR), chr(13), '') LIKE '%1,2,3%' ESCAPE '\')
 LIMIT 10
 staff_multi_person_all	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
@@ -844,7 +844,7 @@ persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", C
 SELECT s."id", s."name"
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010)) AND
- (SELECT COUNT(DISTINCT sp1.person_id) FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\') =
+ (SELECT COUNT(DISTINCT sp1.person_id) FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') =
  (SELECT COUNT(DISTINCT sp1.person_id) FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010))
 LIMIT 10
 staff_multi_subject_any	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -852,28 +852,28 @@ subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" F
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 staff_multi_subject_count	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE CAST((SELECT COUNT(DISTINCT sp1.person_id) FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
+WHERE CAST((SELECT COUNT(DISTINCT sp1.person_id) FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
 LIMIT 10
 staff_multi_subject_none	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE NOT EXISTS (SELECT 1 FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE NOT EXISTS (SELECT 1 FROM subject_persons sp1 JOIN subject_persons sp2 ON sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id LEFT JOIN persons p ON sp1.person_id = p.person_id WHERE sp1.subject_id = s.id AND sp1.position IN (1, 1015, 2007, 3005, 4001) AND sp2.position IN (3, 2010, 3010) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 staff_output	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
-SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT p."name" AS "_v", p.person_id AS "_ord" FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\' ORDER BY p.person_id LIMIT 1) t) AS "原作.name", (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\') AS "原作.count"
+SELECT s."id", s."name", (SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT p."name" AS "_v", p.person_id AS "_ord" FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\' ORDER BY p.person_id LIMIT 1) t) AS "原作.name", (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS "原作.count"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 staff_person_all	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
@@ -881,7 +881,7 @@ subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" F
 SELECT p."person_id", p."name"
 FROM persons p
 WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001)) AND
- (SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') =
+ (SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') =
  (SELECT COUNT(*) FROM subject_persons subject_persons WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001))
 LIMIT 10
 staff_person_any	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -889,21 +889,21 @@ persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", C
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 staff_person_count	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE CAST((SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
+WHERE CAST((SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
 LIMIT 10
 staff_person_none	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE NOT EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(rs."name" AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE NOT EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(rs."name" AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 staff_subject_all	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
@@ -911,7 +911,7 @@ persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", C
 SELECT s."id", s."name"
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001)) AND
- (SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\') =
+ (SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') =
  (SELECT COUNT(*) FROM subject_persons subject_persons WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001))
 LIMIT 10
 staff_subject_any	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -919,21 +919,21 @@ subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" F
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 staff_subject_count	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE CAST((SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
+WHERE CAST((SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\') AS DOUBLE) >= 1
 LIMIT 10
 staff_subject_none	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
 persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
-WHERE NOT EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(p.name AS VARCHAR) LIKE '%test%' ESCAPE '\')
+WHERE NOT EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND replace(CAST(p.name AS VARCHAR), chr(13), '') LIKE '%test%' ESCAPE '\')
 LIMIT 10
 staff_with_subject_cast_subject	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT "person_id", "subject_id", "position", "appear_eps" FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),

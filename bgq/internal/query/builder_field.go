@@ -46,7 +46,7 @@ func (b *SQLBuilder) buildFieldCompare(lhsField, rhsField, rhsModifier, op, lhsA
 
 	switch op {
 	case "eq":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) = CAST(%s AS VARCHAR)", lhs, rhs), nil
+		return fmt.Sprintf("%s = %s", varcharNoCR(lhs), varcharNoCR(rhs)), nil
 	case "gt":
 		return fmt.Sprintf("%s > %s", lhs, rhs), nil
 	case "gte":
@@ -68,11 +68,11 @@ func (b *SQLBuilder) buildFieldCompare(lhsField, rhsField, rhsModifier, op, lhsA
 		}
 		return fmt.Sprintf("%s > %s", normalizeDate(lhs), rm), nil
 	case "contains":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) LIKE '%%' || CAST(%s AS VARCHAR) || '%%'", lhs, rhs), nil
+		return fmt.Sprintf("%s LIKE '%%' || %s || '%%'", varcharNoCR(lhs), varcharNoCR(rhs)), nil
 	case "not_contains":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%' || CAST(%s AS VARCHAR) || '%%' AND TRIM(CAST(%s AS VARCHAR)) <> ''", lhs, rhs, lhs), nil
+		return fmt.Sprintf("%s NOT LIKE '%%' || %s || '%%' AND TRIM(%s) <> ''", varcharNoCR(lhs), varcharNoCR(rhs), varcharNoCR(lhs)), nil
 	case "regex":
-		return fmt.Sprintf("regexp_matches(CAST(%s AS VARCHAR), CAST(%s AS VARCHAR))", lhs, rhs), nil
+		return fmt.Sprintf("regexp_matches(%s, %s)", varcharNoCR(lhs), varcharNoCR(rhs)), nil
 	default:
 		return "", fmt.Errorf("field compare: unsupported operator %q", op)
 	}

@@ -240,6 +240,10 @@ func escapeLike(s string) string {
 	return s
 }
 
+func varcharNoCR(expr string) string {
+	return fmt.Sprintf("replace(CAST(%s AS VARCHAR), chr(13), '')", expr)
+}
+
 // numericLiteralRe matches plain decimal/float literals (optional sign, decimal
 // point, and exponent). Deliberately rejects hex floats, Inf, and NaN so that
 // values interpolated into SQL are always safe numeric literals.
