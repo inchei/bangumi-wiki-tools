@@ -39,6 +39,7 @@
   import { tick } from "svelte";
   import ActionButton from "./ActionButton.svelte";
   import BgmHostSetting from "./BgmHostSetting.svelte";
+  import ScrollableCell from "./ScrollableCell.svelte";
 
   const ALL_POSITIONS = new Set(positionsByType(0));
   const ALL_RELATIONS = new Set(relationsByType(0));
@@ -485,24 +486,29 @@
     return n;
   }
 
-  const MAX_DISPLAY_LEN = 80;
-  let expanded = $state({});
+  const MAX_RENDER_LEN = 2000;
 
-  function toggleExpand(ri, ci) {
-    const key = ri + "_" + ci;
-    expanded = { ...expanded, [key]: !expanded[key] };
-  }
+  let suppressCellReset = false;
+  let prevResForCells = null;
+  let cellScrollEpoch = $state(0);
+  $effect(() => {
+    const res = $lastResult;
+    if (res === prevResForCells) return;
+    prevResForCells = res;
+    if (suppressCellReset) {
+      suppressCellReset = false;
+      return;
+    }
+    cellScrollEpoch++;
+  });
 
-  function cellHtml(col, val, ri, ci, host) {
+  function cellHtml(col, val, host) {
     if (isIDColumn(col)) return bgmLink(val, col, host);
     if (val === null || val === undefined || val === "")
       return '<span class="cell-null">—</span>';
-    const s = String(val);
-    const key = ri + "_" + ci;
-    const isExpanded = expanded[key];
-    const display = isExpanded ? s : s.slice(0, MAX_DISPLAY_LEN);
-    const suffix = !isExpanded && s.length > MAX_DISPLAY_LEN ? "…" : "";
-    return `<span${langAttr(display)}>${escapeHtml(display + suffix).replace(/\n/g, "<br>")}</span>`;
+    let s = String(val);
+    if (s.length > MAX_RENDER_LEN) s = s.slice(0, MAX_RENDER_LEN) + "…";
+    return `<span${langAttr(s)}>${escapeHtml(s).replace(/\n/g, "<br>")}</span>`;
   }
 
   // Date sort applies to date fields only (mirrors backend dateFields in
@@ -587,6 +593,7 @@
       else cmp = pa.str.localeCompare(pb.str, "zh");
       return newSort.asc ? cmp : -cmp;
     });
+    suppressCellReset = true;
     lastResult.set({ ...res, rows });
   }
 
@@ -690,6 +697,7 @@
       next[dc.ci] = JSON.stringify(sorted);
       return next;
     });
+    suppressCellReset = true;
     lastResult.set({ ...res, rows: reordered });
   }
 
@@ -1027,7 +1035,7 @@
             {#each res.rows as row, ri (ri)}
               <div class="results-tr" role="row">
                 <!-- eslint-disable svelte/no-at-html-tags -->
-                {#each bodyCols as bc, bi (bc.kind + ":" + bc.ci)}
+                {#each bodyCols as bc (bc.kind + ":" + bc.ci)}
                   {#if bc.kind === "group"}
                     <div
                       class="results-td results-td-group"
@@ -1125,25 +1133,26 @@
                         </div>
                       {/each}
                     </div>
+                  {:else if isIDColumn(bc.label)}
+                    <div
+                      class="results-td col-id"
+                      role="cell"
+                      aria-describedby={headerId(displayCols[bc.ci])}
+                    >
+                      {@html cellHtml(bc.label, row[bc.ci], $bgmHost)}
+                    </div>
                   {:else}
                     {@const val = row[bc.ci]}
-                    {@const long = val && String(val).length > MAX_DISPLAY_LEN}
-                    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
                     <div
                       class="results-td {cellClass(bc.label)}"
-                      role={long ? "button" : "cell"}
-                      aria-describedby={long
-                        ? undefined
-                        : headerId(displayCols[bc.ci])}
-                      class:cell-expanded={expanded[ri + "_" + bi]}
-                      class:cell-expandable={long}
-                      onclick={long ? () => toggleExpand(ri, bi) : undefined}
-                      onkeydown={long
-                        ? (e) => e.key === "Enter" && toggleExpand(ri, bi)
-                        : undefined}
-                      tabindex={long ? "0" : undefined}
+                      role="cell"
+                      aria-describedby={headerId(displayCols[bc.ci])}
                     >
-                      {@html cellHtml(bc.label, val, ri, bi, $bgmHost)}
+                      <ScrollableCell
+                        html={cellHtml(bc.label, val, $bgmHost)}
+                        value={val}
+                        epoch={cellScrollEpoch}
+                      />
                     </div>
                   {/if}
                 {/each}
@@ -1608,14 +1617,6 @@
     max-width: 20ch;
     min-width: 0;
     overflow-wrap: anywhere;
-  }
-
-  .results-td.cell-expandable {
-    cursor: pointer;
-  }
-
-  .results-td:focus-visible {
-    outline-offset: -2px;
   }
 
   .results-tr {
