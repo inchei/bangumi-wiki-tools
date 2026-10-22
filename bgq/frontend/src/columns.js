@@ -518,5 +518,10 @@ export function prioritizedMetaTags(typeCode) {
 }
 
 export function subjectFieldSuggestions(typeCode = 0) {
-  return [...subjectFieldsForType(typeCode), ...prioritizedPositions(typeCode)];
+  return [
+    ...new Set([
+      ...subjectFieldsForType(typeCode),
+      ...prioritizedPositions(typeCode),
+    ]),
+  ];
 }
