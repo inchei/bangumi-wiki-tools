@@ -28,13 +28,6 @@ function splitStaffs(staffs) {
   );
 }
 
-function fetchInfobox() {
-  const subjectId = location.pathname.split('/')[2];
-  return fetch(`/subject/${subjectId}`)
-    .then((res) => res.text())
-    .then((html) => new DOMParser().parseFromString(html, 'text/html').querySelector('#infobox'));
-}
-
 /**
  * 解析条目 infobox 的制作人员行，转成通用 JSON 格式：
  * { 人物: { 职位: [] } }，空集数数组表示只关联、不填写参与
@@ -44,7 +37,7 @@ function fetchInfobox() {
  * }>}
  */
 export async function getInfoboxStaffInfo() {
-  const infobox = document.querySelector('#infobox') || (await fetchInfobox());
+  const infobox = document.querySelector('#infobox');
   if (!infobox) throw new Error('未找到infobox');
 
   const typeSel = document.querySelector('.focus.chl')?.href.split('/').pop();

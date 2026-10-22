@@ -2085,12 +2085,8 @@ document.head.appendChild(styleEl);
       )
     );
   }
-  function fetchInfobox() {
-    const subjectId = location.pathname.split("/")[2];
-    return fetch(`/subject/${subjectId}`).then((res) => res.text()).then((html) => new DOMParser().parseFromString(html, "text/html").querySelector("#infobox"));
-  }
   async function getInfoboxStaffInfo() {
-    const infobox = document.querySelector("#infobox") || await fetchInfobox();
+    const infobox = document.querySelector("#infobox");
     if (!infobox) throw new Error("未找到infobox");
     const typeSel = document.querySelector(".focus.chl")?.href.split("/").pop();
     const typeCode = TYPE_CODES[typeSel] || 2;
