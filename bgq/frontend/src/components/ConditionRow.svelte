@@ -309,27 +309,6 @@
         <option value="contains">包含</option>
         <option value="negate">排除</option>
       </select>
-    {:else if condType === "global"}
-      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>全局</span>
-      <select
-        class="select"
-        value={item.global.operator}
-        aria-label="匹配方式"
-        onchange={(e) =>
-          updateCondition(group, idx, "global", "operator", e.target.value)}
-      >
-        <option value="contains">包含</option>
-        <option value="not_contains">不包含</option>
-        <option value="not_regex">正则不符合</option>
-        <option value="regex">正则</option>
-      </select>
-      <input
-        class="input"
-        aria-label="关键字"
-        value={item.global.value || ""}
-        onchange={(e) =>
-          updateCondition(group, idx, "global", "value", e.target.value)}
-      />
     {:else if condType === "type"}
       {@const typeOpts = isPersonCtx(ctx)
         ? [

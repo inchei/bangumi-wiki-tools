@@ -45,45 +45,14 @@ func TestBuildConditionNumericRejectsInjection(t *testing.T) {
 	}
 }
 
-// TestGlobalRegexQuoteEscaping verifies that regex operator values are escaped
+// TestRegexQuoteEscaping verifies that regex operator values are escaped
 // as SQL string literals (single quotes doubled) while preserving regex
 // metacharacters, so apostrophes can't break the SQL and patterns stay real
 // regexes.
-func TestGlobalRegexQuoteEscaping(t *testing.T) {
-	for _, build := range []func(*SQLBuilder) (string, error){
-		func(b *SQLBuilder) (string, error) {
-			return b.globalFilter(&config.GlobalFilter{Operator: "regex", Value: "o'brien"})
-		},
-		func(b *SQLBuilder) (string, error) {
-			return b.globalFilterForAlias(&config.GlobalFilter{Operator: "regex", Value: "o'brien"}, "rs")
-		},
-		func(b *SQLBuilder) (string, error) {
-			return b.globalFilterForNested(&config.GlobalFilter{Operator: "regex", Value: "o'brien"}, "p")
-		},
-	} {
-		b := NewSQLBuilder(&config.Config{Target: "subject", Limit: 10}, "/tmp/data")
-		sql, err := build(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !strings.Contains(sql, "'o''brien'") {
-			t.Errorf("apostrophe not SQL-escaped: %s", sql)
-		}
-	}
-
-	// Regex metacharacters must be preserved (not escaped as literals).
-	b := NewSQLBuilder(&config.Config{Target: "subject", Limit: 10}, "/tmp/data")
-	sql, err := b.globalFilter(&config.GlobalFilter{Operator: "regex", Value: "^O.Brien(猫)?$"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(sql, `'^O.Brien(猫)?$'`) {
-		t.Errorf("regex metacharacters were escaped: %s", sql)
-	}
-
+func TestRegexQuoteEscaping(t *testing.T) {
 	// career regex on person target: same escaping rules apply.
 	bp := NewSQLBuilder(&config.Config{Target: "person", Limit: 10}, "/tmp/data")
-	sql, err = bp.fieldFilter(&config.FieldFilter{Field: "career", Operator: "regex", Value: "a'b|c"}, "p")
+	sql, err := bp.fieldFilter(&config.FieldFilter{Field: "career", Operator: "regex", Value: "a'b|c"}, "p")
 	if err != nil {
 		t.Fatal(err)
 	}

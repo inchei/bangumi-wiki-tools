@@ -121,9 +121,6 @@ func validateFilter(f *Filter, target string) error {
 	if f.Field != nil {
 		set++
 	}
-	if f.Global != nil {
-		set++
-	}
 	if f.Tag != nil {
 		set++
 	}
@@ -184,10 +181,6 @@ func validateFilter(f *Filter, target string) error {
 			return fmt.Errorf("field 名称不能为空")
 		}
 		if err := validateOperator(f.Field.Operator); err != nil {
-			return err
-		}
-	case f.Global != nil:
-		if err := validateOperator(f.Global.Operator); err != nil {
 			return err
 		}
 	case f.Tag != nil:

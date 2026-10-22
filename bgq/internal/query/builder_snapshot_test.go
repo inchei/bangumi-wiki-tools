@@ -259,7 +259,6 @@ func generateAllSQL() map[string]string {
 		{"field", []string{"subject", "person", "character", "episode"}, config.Filter{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
 		{"tag", []string{"subject"}, config.Filter{Tag: &config.TagFilter{Operator: "contains", Value: "test"}}},
 		{"meta_tag", []string{"subject"}, config.Filter{MetaTag: &config.TagFilter{Operator: "contains", Value: "TV"}}},
-		{"global", []string{"subject", "person", "character"}, config.Filter{Global: &config.GlobalFilter{Operator: "contains", Value: "test"}}},
 		{"episode", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
 			Mode: "any", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
 				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
@@ -715,7 +714,6 @@ func generateAllSQLDB() map[string]string {
 		{"field", []string{"subject", "person", "character", "episode"}, config.Filter{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
 		{"tag", []string{"subject"}, config.Filter{Tag: &config.TagFilter{Operator: "contains", Value: "test"}}},
 		{"meta_tag", []string{"subject"}, config.Filter{MetaTag: &config.TagFilter{Operator: "contains", Value: "TV"}}},
-		{"global", []string{"subject", "person", "character"}, config.Filter{Global: &config.GlobalFilter{Operator: "contains", Value: "test"}}},
 		{"episode", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
 			Mode: "any", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
 				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},

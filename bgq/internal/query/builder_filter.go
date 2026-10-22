@@ -29,25 +29,6 @@ func (b *SQLBuilder) typeFilter(f *config.TypeFilter) (string, error) {
 	}
 }
 
-// globalFilter searches across all infobox fields.
-func (b *SQLBuilder) globalFilter(f *config.GlobalFilter) (string, error) {
-	valueStr := fmt.Sprintf("%v", f.Value)
-	infobox := b.mainAlias + ".infobox"
-
-	switch f.Operator {
-	case "regex":
-		return fmt.Sprintf("regexp_matches(%s, '%s')", infobox, EscapeLiteral(valueStr)), nil
-	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s, '%s')", infobox, EscapeLiteral(valueStr)), nil
-	case "contains":
-		return fmt.Sprintf("%s LIKE '%%%s%%' ESCAPE '\\'", infobox, escapeLike(valueStr)), nil
-	case "eq":
-		return fmt.Sprintf("%s = '%s'", infobox, EscapeLiteral(valueStr)), nil
-	default:
-		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
-	}
-}
-
 func (b *SQLBuilder) tagFilter(f *config.TagFilter) (string, error) {
 	switch f.Operator {
 	case "contains", "eq":

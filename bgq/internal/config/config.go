@@ -23,7 +23,6 @@ type Config struct {
 type Filter struct {
 	Type              *TypeFilter              `yaml:"type,omitempty" json:"type,omitempty"`
 	Field             *FieldFilter             `yaml:"field,omitempty" json:"field,omitempty"`
-	Global            *GlobalFilter            `yaml:"global,omitempty" json:"global,omitempty"`
 	Tag               *TagFilter               `yaml:"tag,omitempty" json:"tag,omitempty"`
 	MetaTag           *TagFilter               `yaml:"meta_tag,omitempty" json:"meta_tag,omitempty"`
 	Relation          *RelationFilter          `yaml:"relation,omitempty" json:"relation,omitempty"`
@@ -54,12 +53,6 @@ type TypeFilter struct {
 type FieldFilter struct {
 	Field    string      `yaml:"field" json:"field"`
 	Operator string      `yaml:"operator" json:"operator"` // eq, contains, regex, gt, gte, lt, lte, before, after
-	Value    interface{} `yaml:"value" json:"value"`
-}
-
-// GlobalFilter searches across all fields (including infobox).
-type GlobalFilter struct {
-	Operator string      `yaml:"operator" json:"operator"`
 	Value    interface{} `yaml:"value" json:"value"`
 }
 

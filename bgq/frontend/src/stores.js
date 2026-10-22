@@ -19,6 +19,7 @@ const SUBJECT_DIRECT_FIELDS = [
   "rank",
   "date",
   "series",
+  "infobox",
 ];
 
 // Version counter — incremented on every mutation to trigger reactivity
@@ -549,6 +550,7 @@ const PERSON_FIELDS = [
     "id",
     "type",
     "career",
+    "infobox",
     "summary",
     "collects",
     "comments",
@@ -561,6 +563,7 @@ const CHARACTER_FIELDS = [
     "name",
     "id",
     "role",
+    "infobox",
     "summary",
     "comments",
     "collects",

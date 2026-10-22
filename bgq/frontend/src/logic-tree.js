@@ -437,8 +437,6 @@ function createEmptyCondition(type) {
       return { tag: { operator: "contains", value: "", negate: false } };
     case "meta_tag":
       return { meta_tag: { operator: "contains", value: "", negate: false } };
-    case "global":
-      return { global: { operator: "contains", value: "" } };
     case "type":
       return { type: { value: "" } };
     case "relation":

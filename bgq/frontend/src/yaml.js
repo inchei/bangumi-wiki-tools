@@ -66,7 +66,6 @@ function cleanFilter(f) {
   for (const key of [
     "type",
     "field",
-    "global",
     "tag",
     "meta_tag",
     "relation",
@@ -231,7 +230,6 @@ function normalizeFilter(f) {
   for (const key of [
     "type",
     "field",
-    "global",
     "tag",
     "meta_tag",
     "relation",
@@ -280,8 +278,6 @@ function normalizeFilterValue(val, key) {
       case "tag":
       case "meta_tag":
         return { operator: "contains", value: String(val), negate: false };
-      case "global":
-        return { operator: "contains", value: String(val) };
       case "relation":
       case "person_relation":
       case "character_relation":
@@ -467,7 +463,6 @@ const SUBJECT_TYPE_NAMES = new Set(["书籍", "动画", "音乐", "游戏", "三
 const FILTER_KEYS = [
   "type",
   "field",
-  "global",
   "tag",
   "meta_tag",
   "relation",
@@ -516,7 +511,6 @@ const FILTER_KEYS_BY_KIND = {
   logic: ["op", "items"],
   type: ["value"],
   field: ["field", "operator", "value"],
-  global: ["operator", "value"],
   tag: ["operator", "value", "negate"],
   meta_tag: ["operator", "value", "negate"],
   relation: ["type", "mode", "count_op", "count_val", "conditions"],
@@ -601,7 +595,6 @@ function checkNode(key, v, errors) {
       break;
     }
     case "field":
-    case "global":
     case "tag":
     case "meta_tag":
       if (v.operator == null || v.operator === "") {

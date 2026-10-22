@@ -59,15 +59,6 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 					return err
 				}
 			}
-		case "global":
-			if val.Kind == yaml.ScalarNode {
-				f.Global = &GlobalFilter{Operator: "contains", Value: val.Value}
-			} else {
-				f.Global = &GlobalFilter{}
-				if err := decodeStrict(val, key, f.Global); err != nil {
-					return err
-				}
-			}
 		case "tag":
 			if val.Kind == yaml.ScalarNode {
 				// Shorthand: tag: <tag_name>

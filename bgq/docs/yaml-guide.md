@@ -34,7 +34,7 @@ target: person          # subject | person | character | episode
 
 支持直接字段（JSON 中的字段）和 infobox 字段（Wiki 模板中的字段）。
 
-**直接字段**：`id`, `type`, `name`, `name_cn`, `platform`, `summary`, `nsfw`, `score`, `rank`, `date`, `series`
+**直接字段**：`id`, `type`, `name`, `name_cn`, `platform`, `summary`, `nsfw`, `score`, `rank`, `date`, `series`, `infobox`
 
 **Infobox 字段**：`出版社`, `作者`, `导演`, `原作`, `发售日`, `ISBN`, `页数` 等任意 infobox 中的键名。
 
@@ -61,13 +61,13 @@ target: person          # subject | person | character | episode
 
 ## 全局搜索
 
-在所有 infobox 字段中搜索：
+在所有 infobox 字段中搜索（即对整段 infobox 文本匹配）：
 
 ```yaml
-- global:
-    operator: regex         # regex | contains | eq
-    value: "完结"
+- field: { field: infobox, operator: regex, value: "完结" }
 ```
+
+`infobox` 是直接字段，支持 `contains` / `not_contains` / `eq` / `regex` / `not_regex` 等全部操作符，在嵌套条目/人物/角色条件内同样可用。
 
 ## 标签筛选
 

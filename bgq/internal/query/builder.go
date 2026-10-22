@@ -215,8 +215,6 @@ func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
 		return b.typeFilter(f.Type)
 	case f.Field != nil:
 		return b.fieldFilter(f.Field, b.mainAlias)
-	case f.Global != nil:
-		return b.globalFilter(f.Global)
 	case f.Tag != nil:
 		return b.tagFilter(f.Tag)
 	case f.MetaTag != nil:

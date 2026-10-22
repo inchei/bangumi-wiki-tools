@@ -22,8 +22,6 @@ func (b *SQLBuilder) filterForAlias(f config.Filter, alias string, idx int) (str
 		return b.typeFilterForAlias(f.Type, alias)
 	case f.Field != nil:
 		return b.fieldFilterForAlias(f.Field, alias)
-	case f.Global != nil:
-		return b.globalFilterForAlias(f.Global, alias)
 	case f.Tag != nil:
 		return b.tagFilterForAlias(f.Tag, alias)
 	case f.MetaTag != nil:
@@ -86,20 +84,6 @@ func (b *SQLBuilder) fieldFilterForAlias(f *config.FieldFilter, alias string) (s
 	return b.buildCondition(fieldExpr, f.Operator, valueStr)
 }
 
-func (b *SQLBuilder) globalFilterForAlias(f *config.GlobalFilter, alias string) (string, error) {
-	valueStr := fmt.Sprintf("%v", f.Value)
-	switch f.Operator {
-	case "regex":
-		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", alias, EscapeLiteral(valueStr)), nil
-	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", alias, EscapeLiteral(valueStr)), nil
-	case "contains":
-		return fmt.Sprintf("%s.infobox LIKE '%%%s%%' ESCAPE '\\'", alias, escapeLike(valueStr)), nil
-	default:
-		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
-	}
-}
-
 func (b *SQLBuilder) tagFilterForAlias(f *config.TagFilter, alias string) (string, error) {
 	cond := fmt.Sprintf("EXISTS (SELECT 1 FROM (SELECT UNNEST(%s.tags) AS t) WHERE t.name = '%s')",
 		alias, EscapeLiteral(f.Value))
@@ -128,8 +112,6 @@ func (b *SQLBuilder) filterForNestedContext(f config.Filter, idx int, nestedAlia
 	switch {
 	case f.Field != nil:
 		return b.fieldFilterForNested(f.Field, nestedAlias, fieldMap, junctionAlias)
-	case f.Global != nil:
-		return b.globalFilterForNested(f.Global, nestedAlias)
 	case f.Type != nil:
 		if typeCol == "" {
 			return "", fmt.Errorf("此上下文不支持类型筛选 (index %d)", idx)
@@ -212,21 +194,6 @@ func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias str
 	return b.buildCondition(fieldExpr, f.Operator, valueStr)
 }
 
-// globalFilterForNested builds a global search on a nested entity's infobox.
-func (b *SQLBuilder) globalFilterForNested(f *config.GlobalFilter, nestedAlias string) (string, error) {
-	valueStr := fmt.Sprintf("%v", f.Value)
-	switch f.Operator {
-	case "regex":
-		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", nestedAlias, EscapeLiteral(valueStr)), nil
-	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", nestedAlias, EscapeLiteral(valueStr)), nil
-	case "contains":
-		return fmt.Sprintf("%s.infobox LIKE '%%%s%%' ESCAPE '\\'", nestedAlias, escapeLike(valueStr)), nil
-	default:
-		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
-	}
-}
-
 // personEntityFieldMap maps person field names to direct columns on the persons
 // table. The column is resolved against the actual nested alias (p for the main
 // person, rp for a person_relation's related person).
@@ -236,6 +203,7 @@ var personEntityFieldMap = map[string]string{
 	"name":      "name",
 	"type":      "person_type",
 	"career":    "career",
+	"infobox":   "infobox",
 	"summary":   "summary",
 	"collects":  "collects",
 	"comments":  "comments",
@@ -249,6 +217,7 @@ var characterEntityFieldMap = map[string]string{
 	"id":           "character_id",
 	"name":         "name",
 	"role":         "role",
+	"infobox":      "infobox",
 	"summary":      "summary",
 	"comments":     "comments",
 	"collects":     "collects",

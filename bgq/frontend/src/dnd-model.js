@@ -13,7 +13,6 @@ const COND_KINDS = [
   "field",
   "tag",
   "meta_tag",
-  "global",
   "type",
   "relation",
   "person_relation",
@@ -39,7 +38,6 @@ export function getConditionTypeOptions(ctx, qTarget) {
       opts.push({ value: "ep_" + f, label: EPISODE_FIELD_LABELS[f] });
   } else if (ctx === CTX_CHARACTER) {
     opts.push({ value: "field", label: "字段" });
-    opts.push({ value: "global", label: "全局" });
     const cfc = ctxFieldConfigs(ctx);
     for (const k in cfc) opts.push({ value: k, label: cfc[k].label });
     if (qTarget === "character") {
@@ -49,7 +47,6 @@ export function getConditionTypeOptions(ctx, qTarget) {
     }
   } else if (isPersonCtx(ctx)) {
     opts.push({ value: "field", label: "字段" });
-    opts.push({ value: "global", label: "全局" });
     const pfc = ctxFieldConfigs(ctx);
     for (const k in pfc) opts.push({ value: k, label: pfc[k].label });
     if (ctx === CTX_STAFF_PERSON) {
@@ -67,7 +64,6 @@ export function getConditionTypeOptions(ctx, qTarget) {
     for (const k in fc) opts.push({ value: k, label: fc[k].label });
     opts.push({ value: "tag", label: "标签" });
     opts.push({ value: "meta_tag", label: "公共标签" });
-    opts.push({ value: "global", label: "全局" });
     if (qTarget === "subject") {
       opts.push({ value: "relation", label: "条目关系" });
       opts.push({ value: "character", label: "角色" });
@@ -111,8 +107,6 @@ const KIND_DESC = {
   tag: (item) => `标签${item.tag?.value ? `「${item.tag.value}」` : ""}`,
   meta_tag: (item) =>
     `公共标签${item.meta_tag?.value ? `「${item.meta_tag.value}」` : ""}`,
-  global: (item) =>
-    `全局${item.global?.value ? `「${item.global.value}」` : ""}`,
   type: () => "分类",
   relation: () => "条目关系",
   person_relation: () => "人物关系",

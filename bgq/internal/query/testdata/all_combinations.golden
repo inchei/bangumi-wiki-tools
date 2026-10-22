@@ -392,23 +392,6 @@ SELECT s."id", s."name"
 FROM subjects s
 WHERE CAST(s."name" AS VARCHAR) LIKE '%test%' ESCAPE '\'
 LIMIT 10
-global_character	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
-characters AS (SELECT "id" as character_id, "role", "name", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
-SELECT c."character_id", c."name"
-FROM characters c
-WHERE c.infobox LIKE '%test%' ESCAPE '\'
-LIMIT 10
-global_person	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
-persons AS (SELECT "id" as person_id, "name", "type" as person_type, "career", COALESCE("infobox",'') as infobox, "summary", "comments", "collects" FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
-SELECT p."person_id", p."name"
-FROM persons p
-WHERE p.infobox LIKE '%test%' ESCAPE '\'
-LIMIT 10
-global_subject	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
-SELECT s."id", s."name"
-FROM subjects s
-WHERE s.infobox LIKE '%test%' ESCAPE '\'
-LIMIT 10
 logic_or	WITH subjects AS (SELECT "id", "type", "name", "name_cn", "infobox", "platform", "summary", "nsfw", "tags", "meta_tags", "score", "score_details", "rank", "date", "favorite", "series" FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
 SELECT s."id", s."name"
 FROM subjects s
