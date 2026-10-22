@@ -185,7 +185,7 @@ styleEl.textContent = `#crtRelateSubjects li:target {
 #crtRelateSubjects li.staff-repeat-li {
   background: oklch(0.92 0.05 128);
 }
-#crtRelateSubjects li.staff-changed-li {
+ul#crtRelateSubjects li.staff-changed-li {
   background: oklch(0.92 0.05 100);
 }
 #crtRelateSubjects li.staff-alias-li.staff-repeat-li {
@@ -229,7 +229,7 @@ html[data-theme='dark'] #crtRelateSubjects li .staff-row-jump {
 html[data-theme='dark'] #crtRelateSubjects li.staff-repeat-li {
   background: oklch(0.32 0.04 128);
 }
-html[data-theme='dark'] #crtRelateSubjects li.staff-changed-li {
+html[data-theme='dark'] ul#crtRelateSubjects li.staff-changed-li {
   background: oklch(0.32 0.04 100);
 }
 html[data-theme='dark'] #crtRelateSubjects li.staff-alias-li.staff-repeat-li {
@@ -259,6 +259,22 @@ html[data-theme='dark'] #wikiEpRelate .staff-record-item.unmatched {
 }
 html[data-theme='dark'] #wikiEpRelate .staff-record-item.unmatched:hover {
   background: rgba(65, 30, 35, 0.6);
+}
+
+/* infobox 将被解析的人名：点击划掉后解析跳过 */
+.staff-name {
+  color: #1a7a1a;
+  cursor: pointer;
+}
+.staff-name:hover {
+  text-decoration: underline;
+}
+.staff-name-off {
+  color: #909399;
+  text-decoration: line-through;
+}
+html[data-theme='dark'] .staff-name {
+  color: #51cf66;
 }`;
 document.head.appendChild(styleEl);
 
@@ -2096,8 +2112,8 @@ document.head.appendChild(styleEl);
   var SPLIT_RULE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；:：&＆\\]/;
   var FILTER_WORDS = ["CV:", "CV\\.", "feat\\.", "\\*"];
   var EP_MARKER_RE = /^\d+$|^\d+\s*-\s*\d+$|^(?:OP|ED|SP)(?:\d+)?$/i;
+  var DELIM_RE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等]+/;
   var TYPE_CODES = { anime: 2, book: 1, music: 3, game: 4, real: 6 };
-  var PARTS_ROW_RE = /\([^()]*\d[^()]*\)/;
   var TRAILING_PARTS_RE = /\s*\(([^()]*)\)\s*$/;
   var EP_LABEL_ONLY_RE = /^(?:OP|ED|SP)\d*(?:,(?:OP|ED|SP)\d*)*$/i;
   var PARTS_FORMAT_RE = /^(\d+[,-])*\d+$/;
@@ -2121,12 +2137,17 @@ document.head.appendChild(styleEl);
     const allRows = [];
     const partIssues = [];
     const nameVariants = {};
+    const struckNames = new Set(
+      [...infobox.querySelectorAll(".staff-name-off")].map((el) => el.textContent.trim())
+    );
     for (const li of infobox.querySelectorAll("li")) {
       if (li.classList.contains("sub_container")) continue;
       const job = li.childNodes[0]?.textContent.replace(":", "").trim();
-      const staffs = li.childNodes[1]?.textContent.trim();
-      if (!job || !staffs || !staffs.trim()) continue;
-      const names = splitStaffs(staffs.trim());
+      const clone = li.cloneNode(true);
+      clone.querySelectorAll(".tip, .sub_container").forEach((el) => el.remove());
+      const staffs = clone.textContent.trim();
+      if (!job || !staffs) continue;
+      const names = splitStaffs(staffs.trim()).filter((name) => !struckNames.has(name));
       allRows.push({ job, names });
       if (!positionNames.has(job)) {
         skippedRoles.push(job);
@@ -2139,9 +2160,7 @@ document.head.appendChild(styleEl);
       for (const name of names) {
         (staffInfo[name] ||= {})[job] ||= [];
       }
-      if (PARTS_ROW_RE.test(staffs)) {
-        parseParticipations(staffs.trim(), job, staffInfo, nameVariants, partIssues);
-      }
+      parseParticipations(staffs.trim(), job, struckNames, staffInfo, nameVariants, partIssues);
     }
     const partsCount = Object.values(staffInfo).reduce(
       (sum, roles) => sum + Object.values(roles).filter((eps) => eps.length).length,
@@ -2158,7 +2177,7 @@ document.head.appendChild(styleEl);
       nameVariants
     };
   }
-  function parseParticipations(text, job, staffInfo, nameVariants, issues) {
+  function parseParticipations(text, job, struckNames, staffInfo, nameVariants, issues) {
     for (const seg of text.split("、")) {
       const trimmed = seg.trim();
       if (!trimmed) continue;
@@ -2175,6 +2194,10 @@ document.head.appendChild(styleEl);
         const alias = name.match(/\[([^[\]]*)\]$/)[1].trim();
         name = name.replace(/\[[^[\]]*\]$/, "").trim();
         if (alias && !EP_MARKER_RE.test(alias)) variants.unshift(alias);
+      }
+      if (struckNames.has(name)) continue;
+      for (let i = variants.length - 1; i >= 0; i--) {
+        if (struckNames.has(variants[i])) variants.splice(i, 1);
       }
       if (!name && variants.length) name = variants.shift();
       if (!name) {
@@ -2202,6 +2225,49 @@ document.head.appendChild(styleEl);
       }
     }
   }
+  function markInfoboxNames() {
+    const infobox = document.querySelector("#infobox");
+    if (!infobox || infobox.dataset.staffNameMarked) return;
+    infobox.dataset.staffNameMarked = "1";
+    const typeSel = document.querySelector(".focus.chl")?.href.split("/").pop();
+    const typeCode = TYPE_CODES[typeSel] || 2;
+    const positionNames = new Set(Object.values(POSITION_IDS[typeCode] || {}));
+    infobox.querySelectorAll("li:not(.sub_container)").forEach((li) => {
+      const job = li.childNodes[0]?.textContent.replace(":", "").trim();
+      if (!job || !positionNames.has(job) || !roleIdMap[job]) return;
+      const linked = /* @__PURE__ */ new Set();
+      li.querySelectorAll("a").forEach((a) => linked.add(a.textContent.trim()));
+      const clone = li.cloneNode(true);
+      clone.querySelectorAll("a, .tip").forEach((el) => el.remove());
+      const names = clone.textContent.split(DELIM_RE).map((s) => s.trim()).filter(Boolean).filter((n) => !EP_MARKER_RE.test(n)).filter((n) => !linked.has(n));
+      names.sort((a, b) => b.length - a.length);
+      if (!names.length) return;
+      const nameRE = new RegExp(
+        `(?<=^|[^<\\w])(${names.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})([^<\\w]|$)`,
+        "g"
+      );
+      const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => node.parentElement.closest("a, .tip") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+      });
+      const tNodes = [];
+      while (walker.nextNode()) tNodes.push(walker.currentNode);
+      for (const node of tNodes) {
+        const html = node.textContent.replace(
+          nameRE,
+          (_, name, p3) => `<a class="staff-name" title="点击排除/恢复该名字的关联与参与解析">${name}</a>${p3}`
+        );
+        if (html !== node.textContent) {
+          const span = document.createElement("span");
+          span.innerHTML = html;
+          node.replaceWith(...span.childNodes);
+        }
+      }
+    });
+    infobox.addEventListener("click", (e) => {
+      const name = e.target.closest?.(".staff-name");
+      if (name) name.classList.toggle("staff-name-off");
+    });
+  }
 
   // src/index.js
   (async function main() {
@@ -2227,6 +2293,7 @@ document.head.appendChild(styleEl);
       const isAnime = document.querySelector(".focus.chl")?.href.split("/").pop() === "anime";
       const subjectId = location.pathname.split("/")[2];
       const catBox = document.querySelector("#indexCatBox");
+      markInfoboxNames();
       let btn = null;
       if (isAnime) {
         btn = document.createElement("button");

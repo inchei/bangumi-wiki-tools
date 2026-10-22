@@ -1,6 +1,6 @@
 import { extractStaffInfo } from './extract.js';
 import { updAppearEps } from './person-matching.js';
-import { getInfoboxStaffInfo } from './infobox.js';
+import { getInfoboxStaffInfo, markInfoboxNames } from './infobox.js';
 import { getEps, parseEpLabel, setEpsCache } from './ep.js';
 
 (async function main() {
@@ -30,6 +30,8 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
     const isAnime = document.querySelector('.focus.chl')?.href.split('/').pop() === 'anime';
     const subjectId = location.pathname.split('/')[2];
     const catBox = document.querySelector('#indexCatBox');
+
+    markInfoboxNames();
 
     let btn = null;
     if (isAnime) {

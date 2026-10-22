@@ -159,7 +159,7 @@
 #crtRelateSubjects li.staff-repeat-li {
   background: oklch(0.92 0.05 128);
 }
-#crtRelateSubjects li.staff-changed-li {
+ul#crtRelateSubjects li.staff-changed-li {
   background: oklch(0.92 0.05 100);
 }
 #crtRelateSubjects li.staff-alias-li.staff-repeat-li {
@@ -203,7 +203,7 @@ html[data-theme='dark'] #crtRelateSubjects li .staff-row-jump {
 html[data-theme='dark'] #crtRelateSubjects li.staff-repeat-li {
   background: oklch(0.32 0.04 128);
 }
-html[data-theme='dark'] #crtRelateSubjects li.staff-changed-li {
+html[data-theme='dark'] ul#crtRelateSubjects li.staff-changed-li {
   background: oklch(0.32 0.04 100);
 }
 html[data-theme='dark'] #crtRelateSubjects li.staff-alias-li.staff-repeat-li {
@@ -233,4 +233,20 @@ html[data-theme='dark'] #wikiEpRelate .staff-record-item.unmatched {
 }
 html[data-theme='dark'] #wikiEpRelate .staff-record-item.unmatched:hover {
   background: rgba(65, 30, 35, 0.6);
+}
+
+/* infobox 将被解析的人名：点击划掉后解析跳过 */
+.staff-name {
+  color: #1a7a1a;
+  cursor: pointer;
+}
+.staff-name:hover {
+  text-decoration: underline;
+}
+.staff-name-off {
+  color: #909399;
+  text-decoration: line-through;
+}
+html[data-theme='dark'] .staff-name {
+  color: #51cf66;
 }
