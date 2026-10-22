@@ -9,7 +9,14 @@ import { createDraggableTipBox } from './tip-box.js';
 export async function updAppearEps(
   staffInfo,
   noStaffEps,
-  { summary, progress = '解析参与中', indicatorId = 'epDescStaff' } = {},
+  {
+    summary,
+    progress = '解析参与中',
+    indicatorId = 'epDescStaff',
+    skipRoleMissing = false,
+    infoboxIssues = [],
+    nameVariants = {},
+  } = {},
 ) {
   const groupedRecords = {
     new: {}, // 本次新增的参与记录
@@ -69,6 +76,11 @@ export async function updAppearEps(
 
         yield originalName;
         aliased = true;
+
+        // infobox 手写变体（`credited[本名]`）先于别名库与繁简转换尝试
+        for (const variant of nameVariants[originalName] || []) {
+          if (yieldUnique(variant)) yield variant;
+        }
 
         const variants = await getConvertedNames(originalName);
         const aliasMap = await personAliasFallbackBatch([originalName, ...variants]);
@@ -377,18 +389,21 @@ export async function updAppearEps(
     }
   }
 
+  // infobox 参与不要求覆盖全季
   const roleMissingEps = {};
-  Object.entries(roleEpMap).forEach(([role, presentEps]) => {
-    const missingEps = [];
-    allEpLabels.forEach((ep) => {
-      if (!presentEps.has(ep)) {
-        missingEps.push(ep);
+  if (!skipRoleMissing) {
+    Object.entries(roleEpMap).forEach(([role, presentEps]) => {
+      const missingEps = [];
+      allEpLabels.forEach((ep) => {
+        if (!presentEps.has(ep)) {
+          missingEps.push(ep);
+        }
+      });
+      if (missingEps.length && missingEps.length < allEpLabels.size) {
+        roleMissingEps[role] = missingEps;
       }
     });
-    if (missingEps.length && missingEps.length < allEpLabels.size) {
-      roleMissingEps[role] = missingEps;
-    }
-  });
+  }
 
   // handleMatched 只是给已存在/新建行补盖章（id、alias class），期间可能
   // 没有任何建行/删行事件，重名涂色不会随行落位自动触发，收尾统一重算
@@ -400,6 +415,7 @@ export async function updAppearEps(
     formatRecords(groupedRecords.unmatched),
     noStaffEps,
     roleMissingEps,
+    infoboxIssues,
   );
 
   const editSummaryInput = document.querySelector('#editSummary');

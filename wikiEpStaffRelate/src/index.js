@@ -99,26 +99,39 @@ import { getEps, parseEpLabel, setEpsCache } from './ep.js';
         infoboxBtn.disabled = true;
         infoboxBtn.textContent = '解析infobox中……';
 
-        const { staffInfo, unknownRoles, skippedRoles, allRows, typeLabel } =
-          await getInfoboxStaffInfo();
+        const {
+          staffInfo,
+          unknownRoles,
+          skippedRoles,
+          allRows,
+          typeLabel,
+          partIssues,
+          partsCount,
+          nameVariants,
+        } = await getInfoboxStaffInfo();
         if (!Object.keys(staffInfo).length) {
           const extra = [];
           if (skippedRoles.length) extra.push(`未识别职位：${skippedRoles.join('、')}`);
           if (unknownRoles.length) extra.push(`下拉缺失：${[...unknownRoles].join('、')}`);
+          if (partIssues.length) extra.push(`参与解析需复查 ${partIssues.length} 条`);
           const err = new Error(
             `未从 ${typeLabel} infobox 解析到任何人员信息${extra.length ? `（${extra.join('；')}）` : ''}`,
           );
-          err.detail = { skippedRoles, unknownRoles, allRows, typeLabel };
+          err.detail = { skippedRoles, unknownRoles, allRows, typeLabel, partIssues };
           throw err;
         }
 
         await updAppearEps(staffInfo, [], {
-          summary: '根据infobox关联人物',
+          summary: partsCount ? '根据infobox关联人物并补充参与' : '根据infobox关联人物',
           progress: '解析中',
           indicatorId: 'infoboxStaff',
+          skipRoleMissing: true,
+          infoboxIssues: partIssues,
+          nameVariants,
         });
         infoboxBtn.textContent =
           `解析完成！共 ${Object.keys(staffInfo).length} 人` +
+          (partsCount ? `，${partsCount} 条参与` : '') +
           (unknownRoles.length ? `，未识别职位：${unknownRoles.join('、')}` : '');
       } catch (e) {
         console.error('根据infobox关联失败：', e, e.detail);

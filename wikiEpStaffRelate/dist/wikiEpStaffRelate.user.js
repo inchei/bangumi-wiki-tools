@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         根据章节简介关联制作人员参与
 // @namespace    wiki.ep.staff.replate
-// @version      1.0.1
+// @version      1.1.0
 // @description  从章节页或人物关联页根据章节简介关联制作人员参与
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1187,7 +1187,7 @@ document.head.appendChild(styleEl);
   }
 
   // src/tip-box.js
-  function createDraggableTipBox(newRecords, existingRecords, unMatchedRecords, noStaffEps, roleMissingEps) {
+  function createDraggableTipBox(newRecords, existingRecords, unMatchedRecords, noStaffEps, roleMissingEps, infoboxIssues = []) {
     document.querySelector(".staff-tip-box")?.remove();
     const tipBox = document.createElement("div");
     tipBox.className = "staff-tip-box";
@@ -1213,6 +1213,12 @@ document.head.appendChild(styleEl);
             </div>
         `
     ).join("")}
+        ${infoboxIssues?.length ? `<div class="staff-warning-section">
+            <div class="staff-warning-title">infobox 参与解析需复查（${infoboxIssues.length}条）：</div>
+            ${infoboxIssues.map(
+      ({ job, text, reason }) => `<div title="${escapeAttr(text)}">（${escapeAttr(job)}）${escapeAttr(text)} → ${escapeAttr(reason)}</div>`
+    ).join("")}
+        </div>` : ""}
         ${repeatSet.size ? `<div class="staff-warning-section">
             <div class="staff-warning-title">以下${repeatSet.size}个新关联的同名制作人员需要检查：</div>
             ${[...repeatSet].map((repeat) => `<a class="l" href="#staff-${repeat}">${repeat.replace(/-(.+)$/, "（$1）")}</a>`).join("、")}
@@ -1360,7 +1366,14 @@ document.head.appendChild(styleEl);
   }
 
   // src/person-matching.js
-  async function updAppearEps(staffInfo, noStaffEps, { summary, progress = "解析参与中", indicatorId = "epDescStaff" } = {}) {
+  async function updAppearEps(staffInfo, noStaffEps, {
+    summary,
+    progress = "解析参与中",
+    indicatorId = "epDescStaff",
+    skipRoleMissing = false,
+    infoboxIssues = [],
+    nameVariants = {}
+  } = {}) {
     const groupedRecords = {
       new: {},
       // 本次新增的参与记录
@@ -1482,6 +1495,9 @@ document.head.appendChild(styleEl);
           };
           yield originalName;
           aliased = true;
+          for (const variant of nameVariants[originalName] || []) {
+            if (yieldUnique(variant)) yield variant;
+          }
           const variants = await getConvertedNames(originalName);
           const aliasMap = await personAliasFallbackBatch([originalName, ...variants]);
           for (const a of aliasMap[originalName] || []) {
@@ -1672,24 +1688,27 @@ document.head.appendChild(styleEl);
       }
     }
     const roleMissingEps = {};
-    Object.entries(roleEpMap).forEach(([role, presentEps]) => {
-      const missingEps = [];
-      allEpLabels.forEach((ep) => {
-        if (!presentEps.has(ep)) {
-          missingEps.push(ep);
+    if (!skipRoleMissing) {
+      Object.entries(roleEpMap).forEach(([role, presentEps]) => {
+        const missingEps = [];
+        allEpLabels.forEach((ep) => {
+          if (!presentEps.has(ep)) {
+            missingEps.push(ep);
+          }
+        });
+        if (missingEps.length && missingEps.length < allEpLabels.size) {
+          roleMissingEps[role] = missingEps;
         }
       });
-      if (missingEps.length && missingEps.length < allEpLabels.size) {
-        roleMissingEps[role] = missingEps;
-      }
-    });
+    }
     recolorRepeatRows();
     createDraggableTipBox(
       formatRecords(groupedRecords.new),
       formatRecords(groupedRecords.existing),
       formatRecords(groupedRecords.unmatched),
       noStaffEps,
-      roleMissingEps
+      roleMissingEps,
+      infoboxIssues
     );
     const editSummaryInput = document.querySelector("#editSummary");
     editSummaryInput.value = summary ?? `根据${new URLSearchParams(location.search).get("source") || ""}章节简介填写参与`;
@@ -2078,6 +2097,10 @@ document.head.appendChild(styleEl);
   var FILTER_WORDS = ["CV:", "CV\\.", "feat\\.", "\\*"];
   var EP_MARKER_RE = /^\d+$|^\d+\s*-\s*\d+$|^(?:OP|ED|SP)(?:\d+)?$/i;
   var TYPE_CODES = { anime: 2, book: 1, music: 3, game: 4, real: 6 };
+  var PARTS_ROW_RE = /\([^()]*\d[^()]*\)/;
+  var TRAILING_PARTS_RE = /\s*\(([^()]*)\)\s*$/;
+  var EP_LABEL_ONLY_RE = /^(?:OP|ED|SP)\d*(?:,(?:OP|ED|SP)\d*)*$/i;
+  var PARTS_FORMAT_RE = /^(\d+[,-])*\d+$/;
   function splitStaffs(staffs) {
     return Array.from(
       new Set(
@@ -2096,6 +2119,8 @@ document.head.appendChild(styleEl);
     const unknownRoles = /* @__PURE__ */ new Set();
     const skippedRoles = [];
     const allRows = [];
+    const partIssues = [];
+    const nameVariants = {};
     for (const li of infobox.querySelectorAll("li")) {
       if (li.classList.contains("sub_container")) continue;
       const job = li.childNodes[0]?.textContent.replace(":", "").trim();
@@ -2112,10 +2137,70 @@ document.head.appendChild(styleEl);
         continue;
       }
       for (const name of names) {
-        (staffInfo[name] ||= {})[job] = [];
+        (staffInfo[name] ||= {})[job] ||= [];
+      }
+      if (PARTS_ROW_RE.test(staffs)) {
+        parseParticipations(staffs.trim(), job, staffInfo, nameVariants, partIssues);
       }
     }
-    return { staffInfo, unknownRoles: [...unknownRoles], skippedRoles, allRows, typeLabel };
+    const partsCount = Object.values(staffInfo).reduce(
+      (sum, roles) => sum + Object.values(roles).filter((eps) => eps.length).length,
+      0
+    );
+    return {
+      staffInfo,
+      unknownRoles: [...unknownRoles],
+      skippedRoles,
+      allRows,
+      typeLabel,
+      partIssues,
+      partsCount,
+      nameVariants
+    };
+  }
+  function parseParticipations(text, job, staffInfo, nameVariants, issues) {
+    for (const seg of text.split("、")) {
+      const trimmed = seg.trim();
+      if (!trimmed) continue;
+      const m = TRAILING_PARTS_RE.exec(trimmed);
+      if (!m) continue;
+      const isEpLabel = EP_LABEL_ONLY_RE.test(m[1].trim());
+      if (!/\d/.test(m[1]) && !isEpLabel) continue;
+      let name = trimmed.slice(0, m.index).trim();
+      const variants = [];
+      while (/\([^()]*\)$/.test(name)) {
+        name = name.replace(/\([^()]*\)$/, "").trim();
+      }
+      while (/\[[^[\]]*\]$/.test(name)) {
+        const alias = name.match(/\[([^[\]]*)\]$/)[1].trim();
+        name = name.replace(/\[[^[\]]*\]$/, "").trim();
+        if (alias && !EP_MARKER_RE.test(alias)) variants.unshift(alias);
+      }
+      if (!name && variants.length) name = variants.shift();
+      if (!name) {
+        issues.push({ job, text: trimmed, reason: "未解析到人名" });
+        continue;
+      }
+      const parts = m[1].replaceAll("/", ",").replaceAll("，", ",").replaceAll(" ", "");
+      if (!PARTS_FORMAT_RE.test(parts) && !isEpLabel) {
+        issues.push({ job, text: trimmed, reason: "参与格式可能不符，需复查" });
+      }
+      const eps = parseAppearEps(parts);
+      if (!eps.length) {
+        issues.push({ job, text: trimmed, reason: "未解析到集数" });
+        continue;
+      }
+      (staffInfo[name] ||= {})[job] ||= [];
+      for (const ep of eps) {
+        if (!staffInfo[name][job].includes(ep)) staffInfo[name][job].push(ep);
+      }
+      if (variants.length) {
+        const known = nameVariants[name] ||= [];
+        for (const variant of variants) {
+          if (!known.includes(variant)) known.push(variant);
+        }
+      }
+    }
   }
 
   // src/index.js
@@ -2196,23 +2281,36 @@ document.head.appendChild(styleEl);
         try {
           infoboxBtn.disabled = true;
           infoboxBtn.textContent = "解析infobox中……";
-          const { staffInfo, unknownRoles, skippedRoles, allRows, typeLabel } = await getInfoboxStaffInfo();
+          const {
+            staffInfo,
+            unknownRoles,
+            skippedRoles,
+            allRows,
+            typeLabel,
+            partIssues,
+            partsCount,
+            nameVariants
+          } = await getInfoboxStaffInfo();
           if (!Object.keys(staffInfo).length) {
             const extra = [];
             if (skippedRoles.length) extra.push(`未识别职位：${skippedRoles.join("、")}`);
             if (unknownRoles.length) extra.push(`下拉缺失：${[...unknownRoles].join("、")}`);
+            if (partIssues.length) extra.push(`参与解析需复查 ${partIssues.length} 条`);
             const err = new Error(
               `未从 ${typeLabel} infobox 解析到任何人员信息${extra.length ? `（${extra.join("；")}）` : ""}`
             );
-            err.detail = { skippedRoles, unknownRoles, allRows, typeLabel };
+            err.detail = { skippedRoles, unknownRoles, allRows, typeLabel, partIssues };
             throw err;
           }
           await updAppearEps(staffInfo, [], {
-            summary: "根据infobox关联人物",
+            summary: partsCount ? "根据infobox关联人物并补充参与" : "根据infobox关联人物",
             progress: "解析中",
-            indicatorId: "infoboxStaff"
+            indicatorId: "infoboxStaff",
+            skipRoleMissing: true,
+            infoboxIssues: partIssues,
+            nameVariants
           });
-          infoboxBtn.textContent = `解析完成！共 ${Object.keys(staffInfo).length} 人` + (unknownRoles.length ? `，未识别职位：${unknownRoles.join("、")}` : "");
+          infoboxBtn.textContent = `解析完成！共 ${Object.keys(staffInfo).length} 人` + (partsCount ? `，${partsCount} 条参与` : "") + (unknownRoles.length ? `，未识别职位：${unknownRoles.join("、")}` : "");
         } catch (e) {
           console.error("根据infobox关联失败：", e, e.detail);
           alert(`获取失败：${e.message}`);

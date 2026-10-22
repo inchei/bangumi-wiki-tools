@@ -7,6 +7,7 @@ export function createDraggableTipBox(
   unMatchedRecords,
   noStaffEps,
   roleMissingEps,
+  infoboxIssues = [],
 ) {
   document.querySelector('.staff-tip-box')?.remove();
 
@@ -42,6 +43,19 @@ export function createDraggableTipBox(
         `,
           )
           .join('')}
+        ${
+          infoboxIssues?.length
+            ? `<div class="staff-warning-section">
+            <div class="staff-warning-title">infobox 参与解析需复查（${infoboxIssues.length}条）：</div>
+            ${infoboxIssues
+              .map(
+                ({ job, text, reason }) =>
+                  `<div title="${escapeAttr(text)}">（${escapeAttr(job)}）${escapeAttr(text)} → ${escapeAttr(reason)}</div>`,
+              )
+              .join('')}
+        </div>`
+            : ''
+        }
         ${
           repeatSet.size
             ? `<div class="staff-warning-section">
