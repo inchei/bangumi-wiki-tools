@@ -3,7 +3,7 @@
   import { ChevronDown, ChevronUp } from "lucide";
   import { tick } from "svelte";
 
-  let { html, value, epoch = 0 } = $props();
+  let { html, value, epoch = 0, markScroll = false } = $props();
 
   let moreAbove = $state(false);
   let moreBelow = $state(false);
@@ -27,8 +27,23 @@
   $effect(() => {
     void epoch;
     void value;
-    if (boxEl) boxEl.scrollTop = 0;
-    tick().then(measure);
+    void markScroll;
+    if (!boxEl) return;
+    tick().then(() => {
+      const el = boxEl;
+      if (!el) return;
+      el.scrollTop = 0;
+      if (markScroll) {
+        const mark = el.querySelector("mark");
+        if (mark) {
+          el.scrollTop = Math.max(
+            0,
+            mark.offsetTop - (el.clientHeight - mark.offsetHeight) / 2,
+          );
+        }
+      }
+      measure();
+    });
   });
 
   $effect(() => {

@@ -32,6 +32,7 @@
     bumpAssocStructureVersion,
   } from "../stores.js";
   import { getFiltersForAPI } from "../logic-tree.js";
+  import { highlightPatterns, deriveHighlightPatterns } from "../highlight.js";
   import { PERSON_CHAR_TYPES } from "../schema-data.js";
   import {
     assocRowsFromFilters,
@@ -673,6 +674,7 @@
       );
       lastQueryTarget.set(savedTarget);
       lastResult.set(data);
+      highlightPatterns.set(deriveHighlightPatterns(filters));
       // Sync sort state to match the first sort rule if its field is in the result
       // columns (also matching group-column sub-fields like 导演.生日+ ↔
       // 导演.{name|生日|id}+).

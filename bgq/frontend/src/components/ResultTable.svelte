@@ -40,6 +40,7 @@
   import ActionButton from "./ActionButton.svelte";
   import BgmHostSetting from "./BgmHostSetting.svelte";
   import ScrollableCell from "./ScrollableCell.svelte";
+  import { highlightOn, highlightActivePatterns } from "../highlight.js";
 
   const ALL_POSITIONS = new Set(positionsByType(0));
   const ALL_RELATIONS = new Set(relationsByType(0));
@@ -486,8 +487,6 @@
     return n;
   }
 
-  const MAX_RENDER_LEN = 2000;
-
   let suppressCellReset = false;
   let prevResForCells = null;
   let cellScrollEpoch = $state(0);
@@ -502,13 +501,60 @@
     cellScrollEpoch++;
   });
 
-  function cellHtml(col, val, host) {
+  function cellHtml(col, val, host, patterns) {
     if (isIDColumn(col)) return bgmLink(val, col, host);
     if (val === null || val === undefined || val === "")
       return '<span class="cell-null">—</span>';
     let s = String(val);
-    if (s.length > MAX_RENDER_LEN) s = s.slice(0, MAX_RENDER_LEN) + "…";
-    return `<span${langAttr(s)}>${escapeHtml(s).replace(/\n/g, "<br>")}</span>`;
+    let html = escapeHtml(s);
+    if (patterns) html = insertMarks(html, patterns);
+    html = html.replace(/\n/g, "<br>");
+    return `<span${langAttr(s)}>${html}</span>`;
+  }
+
+  function insertMarks(escaped, re) {
+    return escaped
+      .split(/(<[^>]*>)/)
+      .map((seg) =>
+        seg.startsWith("<") ? seg : seg.replace(re, (m) => `<mark>${m}</mark>`),
+      )
+      .join("");
+  }
+
+  function markedTextHtml(s, patterns) {
+    let html = escapeHtml(s);
+    if (patterns) html = insertMarks(html, patterns);
+    return html;
+  }
+
+  function columnPatterns(scope, patterns) {
+    if (!patterns || patterns.length === 0) return null;
+    const hits = patterns.filter((p) => scopeMatchesField(scope, p.field));
+    if (hits.length === 0) return null;
+    if (hits.length === 1) return hits[0].regex;
+    return columnRegexMerge(hits);
+  }
+
+  function scopeMatchesField(scope, field) {
+    if (scope === field) return true;
+    const suffix = "." + field;
+    if (!scope.endsWith(suffix)) return false;
+    return !scope.slice(0, -suffix.length).endsWith(".s");
+  }
+
+  function columnRegexMerge(hits, i = 0) {
+    if (!hits[i]) return null;
+    try {
+      return new RegExp(
+        hits
+          .slice(i)
+          .map((p) => p.source)
+          .join("|"),
+        "g",
+      );
+    } catch {
+      return columnRegexMerge(hits, i + 1);
+    }
   }
 
   // Date sort applies to date fields only (mirrors backend dateFields in
@@ -945,6 +991,10 @@
       </span>
     </div>
     <div class="host-line">
+      <label class="highlight-toggle">
+        <input type="checkbox" bind:checked={$highlightOn} />
+        结果高亮
+      </label>
       <BgmHostSetting />
     </div>
     {#if res.rows.length === 0}
@@ -1047,6 +1097,13 @@
                         {@const workRows = workRowCount(m, bc.fields)}
                         <div class="cell-mini-row">
                           {#each bc.fields as f, fi (f)}
+                            {@const subScope = bc.prefix
+                              ? `${bc.prefix}.${f}`
+                              : f}
+                            {@const subPatterns = columnPatterns(
+                              subScope,
+                              $highlightActivePatterns,
+                            )}
                             {#if f.startsWith("s.") && m.subject}
                               {#if m.subject[f].length === 0}
                                 <div
@@ -1081,14 +1138,23 @@
                                         href={vhref}
                                         target="_blank"
                                         rel="noopener"
-                                        lang={detectLang(v) ?? undefined}>{v}</a
+                                        lang={detectLang(v) ?? undefined}
+                                        >{@html markedTextHtml(
+                                          v,
+                                          subPatterns,
+                                        )}</a
                                       >
                                     {:else}
                                       {@const vl = detectLang(v)}
                                       {#if vl}
-                                        <span lang={vl}>{v}</span>
+                                        <span lang={vl}
+                                          >{@html markedTextHtml(
+                                            v,
+                                            subPatterns,
+                                          )}</span
+                                        >
                                       {:else}
-                                        {v}
+                                        {@html markedTextHtml(v, subPatterns)}
                                       {/if}
                                     {/if}
                                   </div>
@@ -1117,14 +1183,25 @@
                                     target="_blank"
                                     rel="noopener"
                                     lang={detectLang(m.entry[f]) ?? undefined}
-                                    >{m.entry[f]}</a
+                                    >{@html markedTextHtml(
+                                      m.entry[f],
+                                      subPatterns,
+                                    )}</a
                                   >
                                 {:else}
                                   {@const ml = detectLang(m.entry[f])}
                                   {#if ml}
-                                    <span lang={ml}>{m.entry[f]}</span>
+                                    <span lang={ml}
+                                      >{@html markedTextHtml(
+                                        m.entry[f],
+                                        subPatterns,
+                                      )}</span
+                                    >
                                   {:else}
-                                    {m.entry[f]}
+                                    {@html markedTextHtml(
+                                      m.entry[f],
+                                      subPatterns,
+                                    )}
                                   {/if}
                                 {/if}
                               </div>
@@ -1139,19 +1216,29 @@
                       role="cell"
                       aria-describedby={headerId(displayCols[bc.ci])}
                     >
-                      {@html cellHtml(bc.label, row[bc.ci], $bgmHost)}
+                      {@html cellHtml(
+                        bc.label,
+                        row[bc.ci],
+                        $bgmHost,
+                        $highlightActivePatterns,
+                      )}
                     </div>
                   {:else}
                     {@const val = row[bc.ci]}
+                    {@const cellPatterns = columnPatterns(
+                      bc.label,
+                      $highlightActivePatterns,
+                    )}
                     <div
                       class="results-td {cellClass(bc.label)}"
                       role="cell"
                       aria-describedby={headerId(displayCols[bc.ci])}
                     >
                       <ScrollableCell
-                        html={cellHtml(bc.label, val, $bgmHost)}
+                        html={cellHtml(bc.label, val, $bgmHost, cellPatterns)}
                         value={val}
                         epoch={cellScrollEpoch}
+                        markScroll={!!cellPatterns}
                       />
                     </div>
                   {/if}
@@ -1386,6 +1473,29 @@
     display: flex;
     justify-content: flex-end;
     margin-bottom: 16px;
+  }
+
+  .highlight-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 12px;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    transition: var(--transition);
+  }
+
+  .highlight-toggle:hover {
+    color: var(--accent-strong);
+  }
+
+  .highlight-toggle input {
+    margin: 0;
+    accent-color: var(--accent-strong);
+    cursor: pointer;
   }
 
   @container (width < 555px) {
