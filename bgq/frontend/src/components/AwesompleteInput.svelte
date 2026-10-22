@@ -389,7 +389,7 @@
 
   .aw-input :global(~ .aw-drop > ul > li) {
     list-style: none;
-    padding: 5px 10px;
+    padding: 6px 10px;
     line-height: 20px;
     cursor: pointer;
     white-space: nowrap;
