@@ -10,6 +10,8 @@
     sortState,
     resultLimit,
     assocLimit,
+    RESULT_LIMIT_DEFAULT,
+    ASSOC_LIMIT_DEFAULT,
     ctxFields,
     CTX_SUBJECT,
     CTX_PERSON,
@@ -54,6 +56,7 @@
   import { get } from "svelte/store";
   import { SvelteMap } from "svelte/reactivity";
   import AwesompleteInput from "./AwesompleteInput.svelte";
+  import LimitInput from "./LimitInput.svelte";
   import PendingDelete from "./PendingDelete.svelte";
   import { TextMorph } from "torph/svelte";
   import { MorphIcon } from "morphicons/svelte";
@@ -669,8 +672,8 @@
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean) || [];
-    const limit = parseInt($resultLimit) || 500;
-    const al = Math.min(100, Math.max(1, parseInt($assocLimit) || 1));
+    const limit = Number($resultLimit);
+    const al = Number($assocLimit);
     try {
       const savedTarget = get(queryTarget);
       const data = await runQuery(
@@ -898,30 +901,22 @@
     <button class="btn btn-outline btn-xs" onclick={addSortRule}>+ 排序</button>
   </div>
   <div class="form-group limit-row">
-    <div>
-      <label class="form-label" for="resultLimit">结果数量上限</label>
-      <input
-        class="input"
-        id="resultLimit"
-        bind:value={$resultLimit}
-        type="number"
-        min="1"
-        max="10000"
-        style="width:120px"
-      />
-    </div>
-    <div>
-      <label class="form-label" for="assocLimit">关联列出上限</label>
-      <input
-        class="input"
-        id="assocLimit"
-        bind:value={$assocLimit}
-        type="number"
-        min="1"
-        max="100"
-        style="width:100px"
-      />
-    </div>
+    <LimitInput
+      id="resultLimit"
+      label="结果数量上限"
+      max={10000}
+      width={120}
+      defaultValue={RESULT_LIMIT_DEFAULT}
+      bind:value={$resultLimit}
+    />
+    <LimitInput
+      id="assocLimit"
+      label="关联列出上限"
+      max={100}
+      width={100}
+      defaultValue={ASSOC_LIMIT_DEFAULT}
+      bind:value={$assocLimit}
+    />
   </div>
   <button
     id="btn-run"
