@@ -7,12 +7,13 @@ import (
 )
 
 func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
-	if f.Logic == nil {
-		return "TRUE", nil
-	}
-	episodeWhere, err := b.buildClausesWithOp(f.Logic.Items, clauseContext{alias: "e", isEpisodeCtx: true}, f.Logic.Op)
-	if err != nil {
-		return "", fmt.Errorf("episode logic: %w", err)
+	episodeWhere := "TRUE"
+	if f.Logic != nil {
+		var err error
+		episodeWhere, err = b.buildClausesWithOp(f.Logic.Items, clauseContext{alias: "e", isEpisodeCtx: true}, f.Logic.Op)
+		if err != nil {
+			return "", fmt.Errorf("episode logic: %w", err)
+		}
 	}
 	if f.Mode == "none" {
 		return fmt.Sprintf(

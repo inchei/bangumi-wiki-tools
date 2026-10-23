@@ -272,9 +272,8 @@ func validateFilter(f *Filter, target string) error {
 		if err := validateMode(f.Episode.Mode); err != nil {
 			return err
 		}
-		// Without a condition tree the builder cannot tell which episodes to
-		// match (a missing logic previously matched every subject).
-		if f.Episode.Logic == nil || len(f.Episode.Logic.Items) == 0 {
+		if f.Episode.Mode != "count" &&
+			(f.Episode.Logic == nil || len(f.Episode.Logic.Items) == 0) {
 			return fmt.Errorf("episode 筛选需要提供 logic 条件")
 		}
 	case f.Logic != nil:
