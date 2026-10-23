@@ -240,7 +240,7 @@ function logicToFilter(lg) {
   };
 }
 
-function purgeNode(node, exempt = null) {
+export function purgeNode(node, exempt = null) {
   const newItems = [];
   let changed = false;
   for (let idx = 0; idx < node.items.length; idx++) {

@@ -559,6 +559,15 @@
       tokens.splice(idx, 1);
       writeTokens(tokens);
     }
+    // Suppress re-seeding: refresh confirms deletes, so a deliberately
+    // removed prefix that slides back with a live filter must not return
+    // with default fields (auto-seeded rows already carry this mark).
+    if (row.prefix) {
+      assocSeeded.update((m) => ({
+        ...m,
+        [target]: [...new Set([...(m[target] || []), row.prefix])],
+      }));
+    }
     removeManualAssocRow(target, row._id, removedToken);
   }
 

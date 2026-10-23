@@ -1,5 +1,6 @@
 import { writable, get } from "svelte/store";
 
+import { purgeNode } from "./logic-tree.js";
 import { platformsByType } from "./schema-data.js";
 import {
   INFOBOX_FIELDS_PERSON,
@@ -388,20 +389,28 @@ function saveToStorage() {
     const cleanedTargetSettings = {};
     for (const [k, v] of Object.entries(_targetSettings)) {
       if (!v) continue;
-      cleanedTargetSettings[k] = v;
+      cleanedTargetSettings[k] = {
+        ...v,
+        sortRules: (v.sortRules || []).filter((r) => !r?._pendingDelete),
+      };
+    }
+    const assoc = {};
+    for (const [t, rows] of Object.entries(get(manualAssoc))) {
+      const kept = (rows || []).filter((r) => !r?._pendingDelete);
+      if (kept.length > 0) assoc[t] = kept;
     }
     const state = {
       target: get(queryTarget),
-      subject: get(subjectRootLogic),
-      person: get(personRootLogic),
-      character: get(characterRootLogic),
-      episode: get(episodeRootLogic),
+      subject: purgeNode(get(subjectRootLogic)),
+      person: purgeNode(get(personRootLogic)),
+      character: purgeNode(get(characterRootLogic)),
+      episode: purgeNode(get(episodeRootLogic)),
       outputColumns: oc ?? "",
-      sortRules: get(sortRules),
+      sortRules: get(sortRules).filter((r) => !r?._pendingDelete),
       resultLimit: get(resultLimit),
       assocLimit: get(assocLimit),
       targetSettings: cleanedTargetSettings,
-      manualAssoc: get(manualAssoc),
+      manualAssoc: assoc,
       assocSeeded: get(assocSeeded),
       _assocIdCounter,
       _idCounter: _logicIdCounter,
@@ -471,6 +480,7 @@ outputColumns.subscribe(() => saveToStorage());
 sortRules.subscribe(() => saveToStorage());
 resultLimit.subscribe(() => saveToStorage());
 assocLimit.subscribe(() => saveToStorage());
+assocSeeded.subscribe(() => saveToStorage());
 
 export function getTargetStore() {
   const target = get(queryTarget);
