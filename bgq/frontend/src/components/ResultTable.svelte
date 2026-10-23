@@ -1145,17 +1145,17 @@
                                         )}</a
                                       >
                                     {:else}
-                                      {@const vl = detectLang(v)}
-                                      {#if vl}
-                                        <span lang={vl}
-                                          >{@html markedTextHtml(
-                                            v,
-                                            subPatterns,
-                                          )}</span
-                                        >
-                                      {:else}
-                                        {@html markedTextHtml(v, subPatterns)}
-                                      {/if}
+                                      <ScrollableCell
+                                        html={cellHtml(
+                                          subScope,
+                                          v,
+                                          $bgmHost,
+                                          subPatterns,
+                                        )}
+                                        value={v}
+                                        epoch={cellScrollEpoch}
+                                        markScroll={!!subPatterns}
+                                      />
                                     {/if}
                                   </div>
                                 {/each}
@@ -1189,20 +1189,17 @@
                                     )}</a
                                   >
                                 {:else}
-                                  {@const ml = detectLang(m.entry[f])}
-                                  {#if ml}
-                                    <span lang={ml}
-                                      >{@html markedTextHtml(
-                                        m.entry[f],
-                                        subPatterns,
-                                      )}</span
-                                    >
-                                  {:else}
-                                    {@html markedTextHtml(
+                                  <ScrollableCell
+                                    html={cellHtml(
+                                      subScope,
                                       m.entry[f],
+                                      $bgmHost,
                                       subPatterns,
                                     )}
-                                  {/if}
+                                    value={m.entry[f]}
+                                    epoch={cellScrollEpoch}
+                                    markScroll={!!subPatterns}
+                                  />
                                 {/if}
                               </div>
                             {/if}
