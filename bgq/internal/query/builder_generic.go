@@ -139,20 +139,14 @@ type threeWayConfig struct {
 	sideWhere        string // conditions on side entity (already compiled)
 	sideJoin         string // JOIN clause for side entity
 	countDistinctCol string // column for COUNT(DISTINCT pc.X) when mode==count flat or with third conds
-	// generic third leg (was subject leg)
-	thirdTable    string // e.g. "subjects" or "characters"
-	thirdAlias    string // e.g. "rs" or "c"
-	thirdFK       string // column in pc (subject_id / character_id)
-	thirdPK       string // PK column on third entity (id / character_id)
-	thirdWhere    string // conditions on third entity (already compiled)
-	thirdMode     string
-	thirdCountOp  string
-	thirdCountVal interface{}
-	// legacy subject fields (deprecated, mapped to third* above)
-	subjectMode     string
-	subjectCountOp  string
-	subjectCountVal interface{}
-	subjectWhere    string
+	thirdTable       string // e.g. "subjects" or "characters"
+	thirdAlias       string // e.g. "rs" or "c"
+	thirdFK          string // column in pc (subject_id / character_id)
+	thirdPK          string // PK column on third entity (id / character_id)
+	thirdWhere       string // conditions on third entity (already compiled)
+	thirdMode        string
+	thirdCountOp     string
+	thirdCountVal    interface{}
 }
 
 // threeWayFilter generates SQL for a three-way join filter (person_characters).
@@ -167,29 +161,16 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 		sideWhere = "TRUE"
 	}
 	sideJoin := cfg.sideJoin
-	// normalize third leg: prefer new fields, fallback to legacy subject fields
 	thirdWhere := cfg.thirdWhere
-	if thirdWhere == "" {
-		thirdWhere = cfg.subjectWhere
-	}
 	if thirdWhere == "" {
 		thirdWhere = "TRUE"
 	}
 	thirdMode := cfg.thirdMode
 	if thirdMode == "" {
-		thirdMode = cfg.subjectMode
-	}
-	if thirdMode == "" {
 		thirdMode = "any"
 	}
 	thirdCountOp := cfg.thirdCountOp
-	if thirdCountOp == "" {
-		thirdCountOp = cfg.subjectCountOp
-	}
 	thirdCountVal := cfg.thirdCountVal
-	if thirdCountVal == nil {
-		thirdCountVal = cfg.subjectCountVal
-	}
 	thirdTable := cfg.thirdTable
 	thirdAlias := cfg.thirdAlias
 	thirdFK := cfg.thirdFK
