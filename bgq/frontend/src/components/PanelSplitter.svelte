@@ -14,7 +14,10 @@
   let nextW = null;
 
   function readMax() {
-    return Math.max(MIN, Math.floor(window.innerWidth * 0.5));
+    return Math.max(
+      MIN,
+      Math.floor(document.documentElement.clientWidth * 0.5),
+    );
   }
 
   function clampW(w) {

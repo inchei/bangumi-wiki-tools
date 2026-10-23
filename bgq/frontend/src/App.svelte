@@ -56,16 +56,10 @@
   }
 
   $effect(() => {
-    const apply = () => {
-      const max = Math.max(280, Math.floor(window.innerWidth * 0.5));
-      document.documentElement.style.setProperty(
-        "--panel-left-w",
-        `${Math.min(Math.round(leftWidth), max)}px`,
-      );
-    };
-    apply();
-    window.addEventListener("resize", apply);
-    return () => window.removeEventListener("resize", apply);
+    document.documentElement.style.setProperty(
+      "--panel-left-w",
+      `${Math.round(leftWidth)}px`,
+    );
   });
 
   // Sprite logo: horizontal strip, only X changes
@@ -422,7 +416,7 @@
   }
 
   :global(.panel-left) {
-    width: var(--panel-left-w, 420px);
+    width: min(var(--panel-left-w, 420px), 50vw);
     min-width: 280px;
     background: var(--white);
     padding: 20px 15px;
