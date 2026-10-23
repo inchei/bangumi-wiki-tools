@@ -20,7 +20,7 @@
     undoLogicGroupDelete,
   } from "../logic-tree.js";
   import { describeItem, getConditionTypeOptions } from "../dnd-model.js";
-  import ConditionRow from "./ConditionRow.svelte";
+  import ConditionRow from "./conditions/ConditionRow.svelte";
   import PendingDelete from "./PendingDelete.svelte";
   import Self from "./FilterTree.svelte";
   import DragHandle from "./DragHandle.svelte";
