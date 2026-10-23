@@ -358,6 +358,7 @@ a:hover {
 
 /* ===== Radio Pill ===== */
 .radio-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -388,9 +389,10 @@ a:hover {
 
 .sr-radio {
   position: absolute;
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
-  margin: -1px;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
