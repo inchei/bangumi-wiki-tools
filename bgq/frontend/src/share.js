@@ -11,9 +11,14 @@ import {
   outputColumns,
   sortRules,
   resultLimit,
+  manualAssoc,
+  assocSeeded,
+  nextAssocId,
+  getRootLogic,
   resetStructureVersions,
 } from "./stores.js";
 import { getFiltersForAPI, applyFiltersFromAPI } from "./logic-tree.js";
+import { assocPrefixesForTarget, assocRowsFromFilters } from "./columns.js";
 import { get } from "svelte/store";
 
 const STATE_VERSION = 1;
@@ -117,6 +122,25 @@ export function applyShareState(state) {
   if (state.columns?.length > 0) outputColumns.set(state.columns.join(","));
   if (state.sort) sortRules.set(state.sort);
   if (state.limit) resultLimit.set(state.limit);
+  const target = get(queryTarget);
+  const prefixes = new Set(assocPrefixesForTarget(target).map((r) => r.prefix));
+  const filters = assocRowsFromFilters(target, getRootLogic().items);
+  const rows = [
+    ...new Set(
+      (Array.isArray(state.columns) ? state.columns : [])
+        .filter((col) => typeof col === "string" && col.includes("."))
+        .map((col) => col.slice(0, col.indexOf(".")))
+        .filter((prefix) => prefixes.has(prefix)),
+    ),
+  ];
+  manualAssoc.update((m) => ({
+    ...m,
+    [target]: rows.map((prefix) => ({ prefix, _id: nextAssocId() })),
+  }));
+  assocSeeded.update((m) => ({
+    ...m,
+    [target]: filters.map((r) => r.prefix).filter((p) => prefixes.has(p)),
+  }));
   resetStructureVersions();
 }
 
