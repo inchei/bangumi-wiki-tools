@@ -9,7 +9,7 @@
     removeManualAssocRow,
     undoManualAssocRowRemove,
     bumpAssocStructureVersion,
-  } from "../../stores.js";
+  } from "@/stores.js";
   import {
     parseAssocToken,
     buildAssocToken,
@@ -17,7 +17,7 @@
     ENTITY_FIELDS,
     ENTITY_LABELS,
     DEFAULT_ROW_FIELDS,
-  } from "../../columns.js";
+  } from "@/columns.js";
   import { splitTokens, findManagedIndex } from "./association-output-utils.js";
   import AwesompleteInput from "../AwesompleteInput.svelte";
   import PendingDelete from "../PendingDelete.svelte";

@@ -1,4 +1,4 @@
-import { parseAssocToken } from "../../columns.js";
+import { parseAssocToken } from "@/columns.js";
 
 export function splitTokens(str) {
   return str

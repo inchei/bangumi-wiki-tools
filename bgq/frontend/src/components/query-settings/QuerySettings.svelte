@@ -21,8 +21,8 @@
     characterRootLogic,
     episodeRootLogic,
     DEFAULT_SETTINGS,
-  } from "../../stores.js";
-  import { PERSON_CHAR_TYPES } from "../../schema-data.js";
+  } from "@/stores.js";
+  import { PERSON_CHAR_TYPES } from "@/schema-data.js";
   import {
     assocRowsFromFilters,
     assocFieldsFromFilters,
@@ -34,7 +34,7 @@
     detectSubjectTypeCode,
     prioritizedPositions,
     subjectFieldsForType,
-  } from "../../columns.js";
+  } from "@/columns.js";
   import { SvelteMap } from "svelte/reactivity";
   import AwesompleteInput from "../AwesompleteInput.svelte";
   import LimitInput from "../LimitInput.svelte";

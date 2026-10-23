@@ -1,5 +1,5 @@
 <script>
-  import { opLabel } from "../../stores.js";
+  import { opLabel } from "@/stores.js";
   import { MorphIcon } from "morphicons/svelte";
   import { X } from "lucide";
   import FilterTree from "../FilterTree.svelte";

@@ -9,9 +9,9 @@
     CTX_EPISODE,
     EPISODE_FIELD_LABELS,
     CAREER_OPTIONS,
-  } from "../../stores.js";
-  import { updateCondition } from "../../logic-tree.js";
-  import { subjectFieldSuggestions } from "../../columns.js";
+  } from "@/stores.js";
+  import { updateCondition } from "@/logic-tree.js";
+  import { subjectFieldSuggestions } from "@/columns.js";
   import AwesompleteInput from "../AwesompleteInput.svelte";
 
   let { item, group, idx, ctx, subjectType } = $props();

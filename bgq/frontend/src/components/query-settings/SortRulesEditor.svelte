@@ -5,7 +5,7 @@
     removeSortRule,
     undoSortRuleRemove,
     bumpSortStructureVersion,
-  } from "../../stores.js";
+  } from "@/stores.js";
   import AwesompleteInput from "../AwesompleteInput.svelte";
   import PendingDelete from "../PendingDelete.svelte";
   import { MorphIcon } from "morphicons/svelte";

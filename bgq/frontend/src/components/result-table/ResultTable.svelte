@@ -1,26 +1,21 @@
 <script>
   import { MorphIcon } from "morphicons/svelte";
   import { Copy, Share2, Download, Inbox, ClipboardList } from "lucide";
-  import {
-    lastResult,
-    sortState,
-    queryLoading,
-    bgmHost,
-  } from "../../stores.js";
+  import { lastResult, sortState, queryLoading, bgmHost } from "@/stores.js";
   import {
     buildShareURL,
     buildShareState,
     encodeShareState,
     MAX_PAYLOAD_LEN,
     SHARE_PARAM,
-  } from "../../share.js";
+  } from "@/share.js";
   import { SvelteURL } from "svelte/reactivity";
   import { tick } from "svelte";
   import ActionButton from "../ActionButton.svelte";
   import BgmHostSetting from "../BgmHostSetting.svelte";
   import ResultTableGrid from "./ResultTableGrid.svelte";
   import { isIDColumn } from "./result-table-utils.js";
-  import { highlightOn, highlightActivePatterns } from "../../highlight.js";
+  import { highlightOn, highlightActivePatterns } from "@/highlight.js";
 
   // Parse a group JSON column: "导演.{name|生日|id}" → { prefix, fields }.
   function parseGroupCol(col) {

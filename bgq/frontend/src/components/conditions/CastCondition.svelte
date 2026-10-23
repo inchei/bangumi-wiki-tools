@@ -1,15 +1,7 @@
 <script>
-  import {
-    CTX_CHARACTER,
-    CTX_PERSON,
-    CTX_SUBJECT,
-    opLabel,
-  } from "../../stores.js";
-  import { removeLogicLeaf, updateCondition } from "../../logic-tree.js";
-  import {
-    CHARACTER_ASSOC_TYPES,
-    PERSON_CHAR_TYPES,
-  } from "../../schema-data.js";
+  import { CTX_CHARACTER, CTX_PERSON, CTX_SUBJECT, opLabel } from "@/stores.js";
+  import { removeLogicLeaf, updateCondition } from "@/logic-tree.js";
+  import { CHARACTER_ASSOC_TYPES, PERSON_CHAR_TYPES } from "@/schema-data.js";
   import FilterTree from "../FilterTree.svelte";
   import AwesompleteInput from "../AwesompleteInput.svelte";
   import { MorphIcon } from "morphicons/svelte";

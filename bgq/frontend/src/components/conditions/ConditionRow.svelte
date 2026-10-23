@@ -9,25 +9,25 @@
     CTX_CHARACTER,
     CTX_EPISODE,
     isPersonCtx,
-  } from "../../stores.js";
+  } from "@/stores.js";
   import {
     removeLogicLeaf,
     undoLogicLeafDelete,
     updateCondition,
     updateStaffPositions,
-  } from "../../logic-tree.js";
+  } from "@/logic-tree.js";
   import {
     PERSON_RELATIONS,
     CHARACTER_RELATIONS,
     CHARACTER_ASSOC_TYPES,
-  } from "../../schema-data.js";
+  } from "@/schema-data.js";
   import {
     detectSubjectTypeCode,
     prioritizedRelations,
     prioritizedPositions,
     prioritizedMetaTags,
-  } from "../../columns.js";
-  import { getConditionKind, describeItem } from "../../dnd-model.js";
+  } from "@/columns.js";
+  import { getConditionKind, describeItem } from "@/dnd-model.js";
   import FilterTree from "../FilterTree.svelte";
   import AwesompleteInput from "../AwesompleteInput.svelte";
   import PendingDelete from "../PendingDelete.svelte";
