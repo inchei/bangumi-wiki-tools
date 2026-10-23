@@ -32,8 +32,10 @@
 
   let appliedFlash = $state(false);
   let syncedFlash = $state(false);
+  let copyFlash = $state(false);
   let applyTimer = 0;
   let syncTimer = 0;
+  let copyTimer = 0;
 
   function pulse(which) {
     if (which === "apply") {
@@ -53,9 +55,39 @@
     }
   }
 
+  function copyYaml() {
+    const copy = (text) => {
+      const t = document.createElement("textarea");
+      t.value = text;
+      t.style.position = "fixed";
+      t.style.opacity = "0";
+      document.body.appendChild(t);
+      t.select();
+      let ok;
+      try {
+        ok = document.execCommand("copy");
+      } catch {
+        ok = false;
+      }
+      t.remove();
+      return ok;
+    };
+    const text = yamlText;
+    if (navigator.clipboard?.writeText)
+      navigator.clipboard.writeText(text).catch(() => copy(text));
+    else copy(text);
+    copyFlash = true;
+    announce("已复制 YAML");
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => {
+      copyFlash = false;
+    }, FLASH_MS);
+  }
+
   onDestroy(() => {
     clearTimeout(applyTimer);
     clearTimeout(syncTimer);
+    clearTimeout(copyTimer);
   });
 
   function syncFromFilters() {
@@ -288,6 +320,9 @@
             >撤销</button
           >
         {/if}
+        <button class="btn btn-default btn-sm" onclick={copyYaml}>
+          {copyFlash ? "已复制" : "复制"}
+        </button>
       </div>
       <button class="btn btn-default btn-sm" onclick={syncFromFilters}>
         {syncedFlash ? "已同步" : "同步当前配置"}
