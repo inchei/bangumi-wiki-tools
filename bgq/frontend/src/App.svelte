@@ -32,9 +32,9 @@
   import { purgeLogicPendingDeletes } from "./logic-tree.js";
   import { decodeShareState, applyShareState, SHARE_PARAM } from "./share.js";
   import FilterTree from "./components/FilterTree.svelte";
-  import ResultTable from "./components/ResultTable.svelte";
+  import ResultTable from "./components/result-table/ResultTable.svelte";
   import YamlEditor from "./components/YamlEditor.svelte";
-  import QuerySettings from "./components/QuerySettings.svelte";
+  import QuerySettings from "./components/query-settings/QuerySettings.svelte";
   import PanelSplitter from "./components/PanelSplitter.svelte";
 
   let themeMode = $state("system");

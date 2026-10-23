@@ -1,8 +1,8 @@
 import { get } from "svelte/store";
-import { getFiltersForAPI } from "../logic-tree.js";
-import { collectRegexErrors } from "../regex-check.js";
-import { highlightPatterns, deriveHighlightPatterns } from "../highlight.js";
-import { runQuery } from "../api.js";
+import { getFiltersForAPI } from "../../logic-tree.js";
+import { collectRegexErrors } from "../../regex-check.js";
+import { highlightPatterns, deriveHighlightPatterns } from "../../highlight.js";
+import { runQuery } from "../../api.js";
 import {
   queryTarget,
   lastResult,
@@ -14,7 +14,7 @@ import {
   resultLimit,
   assocLimit,
   announce,
-} from "../stores.js";
+} from "../../stores.js";
 
 export async function executeQuery(setLoading) {
   const filters = getFiltersForAPI();

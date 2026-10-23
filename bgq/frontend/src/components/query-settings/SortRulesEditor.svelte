@@ -5,9 +5,9 @@
     removeSortRule,
     undoSortRuleRemove,
     bumpSortStructureVersion,
-  } from "../stores.js";
-  import AwesompleteInput from "./AwesompleteInput.svelte";
-  import PendingDelete from "./PendingDelete.svelte";
+  } from "../../stores.js";
+  import AwesompleteInput from "../AwesompleteInput.svelte";
+  import PendingDelete from "../PendingDelete.svelte";
   import { MorphIcon } from "morphicons/svelte";
   import { ArrowDownWideNarrow, ArrowDownNarrowWide, X } from "lucide";
 

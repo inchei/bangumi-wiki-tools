@@ -1,6 +1,6 @@
 <script>
   import { get } from "svelte/store";
-  import { lastQueryTarget } from "../stores.js";
+  import { lastQueryTarget } from "../../stores.js";
   import {
     positionsByType,
     PERSON_CHAR_TYPES,
@@ -8,7 +8,7 @@
     CHARACTER_RELATIONS,
     relationsByType,
     CHARACTER_ASSOC_TYPES,
-  } from "../schema-data.js";
+  } from "../../schema-data.js";
   import ScrollableCell from "./ScrollableCell.svelte";
   import { headerId, isIDColumn } from "./result-table-utils.js";
 
