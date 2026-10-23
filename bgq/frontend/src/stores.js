@@ -470,17 +470,21 @@ if (saved?.manualAssoc) {
 if (saved?.assocSeeded) assocSeeded.set(saved.assocSeeded);
 if (saved?._assocIdCounter != null) _assocIdCounter = saved._assocIdCounter;
 
-// Auto-save to localStorage on any change
-subjectRootLogic.subscribe(() => saveToStorage());
-personRootLogic.subscribe(() => saveToStorage());
-characterRootLogic.subscribe(() => saveToStorage());
-episodeRootLogic.subscribe(() => saveToStorage());
-queryTarget.subscribe(() => saveToStorage());
-outputColumns.subscribe(() => saveToStorage());
-sortRules.subscribe(() => saveToStorage());
-resultLimit.subscribe(() => saveToStorage());
-assocLimit.subscribe(() => saveToStorage());
-assocSeeded.subscribe(() => saveToStorage());
+const persistedStores = [
+  subjectRootLogic,
+  personRootLogic,
+  characterRootLogic,
+  episodeRootLogic,
+  queryTarget,
+  outputColumns,
+  sortRules,
+  resultLimit,
+  assocLimit,
+  manualAssoc,
+  assocSeeded,
+];
+
+for (const store of persistedStores) store.subscribe(() => saveToStorage());
 
 export function getTargetStore() {
   const target = get(queryTarget);
