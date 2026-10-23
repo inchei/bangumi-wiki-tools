@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
@@ -90,7 +91,7 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts [
 	mux.HandleFunc("/sitemap.xml", s.handleSitemap)
 	mux.HandleFunc("/", s.handleStatic)
 
-	handler := securityHeaders(s.corsMiddleware(mux))
+	handler := gzipMiddleware(securityHeaders(s.corsMiddleware(mux)))
 
 	duckdbPath := query.GetDuckDBPath()
 	duckdbOK := fileExists(duckdbPath)
@@ -134,6 +135,35 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts [
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("服务器启动失败: %v", err)
 	}
+}
+
+type gzipResponseWriter struct {
+	http.ResponseWriter
+	writer *gzip.Writer
+}
+
+func (w *gzipResponseWriter) Write(p []byte) (int, error) {
+	return w.writer.Write(p)
+}
+
+func (w *gzipResponseWriter) Flush() {
+	_ = w.writer.Flush()
+}
+
+func gzipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") ||
+			r.Method == http.MethodHead {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Add("Vary", "Accept-Encoding")
+		w.Header().Del("Content-Length")
+		gz := gzip.NewWriter(w)
+		defer func() { _ = gz.Close() }()
+		next.ServeHTTP(&gzipResponseWriter{ResponseWriter: w, writer: gz}, r)
+	})
 }
 
 func securityHeaders(next http.Handler) http.Handler {
