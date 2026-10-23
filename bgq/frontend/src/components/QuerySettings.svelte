@@ -34,6 +34,7 @@
     bumpAssocStructureVersion,
   } from "../stores.js";
   import { getFiltersForAPI } from "../logic-tree.js";
+  import { collectRegexErrors } from "../regex-check.js";
   import { highlightPatterns, deriveHighlightPatterns } from "../highlight.js";
   import { PERSON_CHAR_TYPES } from "../schema-data.js";
   import {
@@ -661,6 +662,21 @@
     if (filters.length === 0 && sort.length === 0) {
       lastResult.set({ error: "请先添加筛选条件或排序" });
       announce("请先添加筛选条件或排序");
+      return;
+    }
+    try {
+      const regexIssues = await collectRegexErrors(filters);
+      if (regexIssues.length) {
+        const issue = regexIssues[0];
+        const error = `正则错误：${JSON.stringify(issue.pattern)}：${issue.message}`;
+        lastResult.set({ error });
+        announce(`查询失败，${error}`);
+        return;
+      }
+    } catch (e) {
+      const error = `正则校验失败：${e.message}`;
+      lastResult.set({ error });
+      announce(`查询失败，${error}`);
       return;
     }
     loading = true;
