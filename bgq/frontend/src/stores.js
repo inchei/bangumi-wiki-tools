@@ -248,7 +248,10 @@ export function restoreTargetSettings(target) {
 }
 
 export function clearOutputSettings() {
-  outputColumns.set("");
+  outputColumns.set(
+    (DEFAULT_SETTINGS[get(queryTarget)] || DEFAULT_SETTINGS.subject)
+      .outputColumns,
+  );
   sortRules.set([]);
   sortState.set({ col: -1, asc: true, field: "" });
   resultLimit.set(RESULT_LIMIT_DEFAULT);
