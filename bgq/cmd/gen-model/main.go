@@ -128,19 +128,19 @@ func main() {
 		}
 	}
 
-	wikiMPDir := findPackageDir("wikiMissingPositions/src")
-	if wikiMPDir != "" {
+	commonDir := findPackageDir("userscripts/userscript-common")
+	if commonDir != "" {
 		fmt.Println("  Generating position-ids.js...")
-		generatePositionIDs(staffYAML, wikiMPDir)
+		generatePositionIDs(staffYAML, commonDir)
 	}
 
-	wikiEpStaffRelateDir := findPackageDir("wikiEpStaffRelate/src")
+	wikiEpStaffRelateDir := findPackageDir("userscripts/wikiEpStaffRelate/src")
 	if wikiEpStaffRelateDir != "" {
 		fmt.Println("  Generating positions.generated.js...")
 		generateStaffFallbackPositions(staffYAML, wikiEpStaffRelateDir)
 	}
 
-	wikiBatchDir := findPackageDir("wikiBatch/src")
+	wikiBatchDir := findPackageDir("userscripts/wikiBatch/src")
 	if wikiBatchDir != "" {
 		fmt.Println("  Generating infobox-field-order.ts...")
 		generateInfoboxFieldOrder(wikiTemplateYAML, wikiBatchDir)
@@ -482,8 +482,8 @@ var fallbackReplacements = []struct {
 	{"编曲", "編曲|编曲"},
 }
 
-// findPackageDir walks up from the CWD looking for the sibling `wiki-*/src`
-// package, so the output branches do not depend on a fixed run directory.
+// findPackageDir walks up from the CWD looking for a repository-relative directory,
+// so the output branches do not depend on a fixed run directory.
 func findPackageDir(rel string) string {
 	dir, err := os.Getwd()
 	if err != nil {

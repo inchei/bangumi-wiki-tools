@@ -1,9 +1,9 @@
 packages:
   - 'bgq/frontend'
-  - 'wikiBatch'
-  - 'wikiMissingPositions'
-  - 'wikiEpStaffRelate'
-  - 'wikiPersonAlias'
+  - 'userscripts/wikiBatch'
+  - 'userscripts/wikiMissingPositions'
+  - 'userscripts/wikiEpStaffRelate'
+  - 'userscripts/wikiPersonAlias'
 
 allowBuilds:
   esbuild: true

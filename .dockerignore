@@ -1,8 +1,6 @@
 .git/
 .github/
-wikiBatch/
-wikiMissingPositions/
-wikiPersonAlias/
+userscripts/
 filters/
 results/
 bangumi_archive/

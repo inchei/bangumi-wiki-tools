@@ -28,35 +28,35 @@
 
 ![demo](https://lsky.ry.mk/i/2026/07/30/cab358afbdbbb.webp)
 
-安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiBatch/dist/wikiBatch.user.js>
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/userscripts/wikiBatch/dist/wikiBatch.user.js>
 
-[文档](wikiBatch/README.md)
+[文档](userscripts/wikiBatch/README.md)
 
 ### wikiPersonAlias
 
 用户脚本，将 `person_alias.json.gz` 导入 IndexedDB，提供 `window.personAliasQuery` / `window.personAliasQueryAll` 接口供其他脚本本地查询人物别名。
 
-安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiPersonAlias/wikiPersonAlias.user.js>
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/userscripts/wikiPersonAlias/wikiPersonAlias.user.js>
 
 ### wikiMissingPositions
 
 用户脚本，在条目页和人物关联页一键补完已填写但未关联的 STAFF。
 
-安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiMissingPositions/dist/wikiMissingPositions.user.js>
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/userscripts/wikiMissingPositions/dist/wikiMissingPositions.user.js>
 
 或启用[组件](https://bgm.tv/dev/app/6476)。
 
-[文档](wikiMissingPositions/README.md) · [Bangumi 讨论](https://bgm.tv/group/topic/465351)
+[文档](userscripts/wikiMissingPositions/README.md) · [Bangumi 讨论](https://bgm.tv/group/topic/465351)
 
 ### wikiEpStaffRelate
 
 用户脚本，根据章节简介解析制作人员并一键填写参与集数、补建人物关联。
 
-安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiEpStaffRelate/dist/wikiEpStaffRelate.user.js>
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/userscripts/wikiEpStaffRelate/dist/wikiEpStaffRelate.user.js>
 
 或启用[组件](https://bgm.tv/dev/app/4948)。
 
-[文档](wikiEpStaffRelate/README.md) · [GreasyFork](https://greasyfork.org/zh-CN/scripts/552493) · [Bangumi 讨论](https://bgm.tv/group/topic/439326)
+[文档](userscripts/wikiEpStaffRelate/README.md) · [GreasyFork](https://greasyfork.org/zh-CN/scripts/552493) · [Bangumi 讨论](https://bgm.tv/group/topic/439326)
 
 ### Python 脚本
 
@@ -79,7 +79,7 @@
 
 ### 本地批量生成
 
-需要 CSV 文件用于 [wikiBatch](wikiBatch/README.md) 批量编辑时，可本地运行：
+需要 CSV 文件用于 [wikiBatch](userscripts/wikiBatch/README.md) 批量编辑时，可本地运行：
 
 ```bash
 mkdir -p results

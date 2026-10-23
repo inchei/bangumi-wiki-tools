@@ -78,7 +78,7 @@ importers:
         specifier: ^8.3.3
         version: 8.3.3(@types/node@22.20.2)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.0)
 
-  wikiBatch:
+  userscripts/wikiBatch:
     dependencies:
       '@codemirror/commands':
         specifier: ^6.11.1
@@ -145,7 +145,7 @@ importers:
         specifier: ^8.70.0
         version: 8.70.0(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)
 
-  wikiEpStaffRelate:
+  userscripts/wikiEpStaffRelate:
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -166,7 +166,7 @@ importers:
         specifier: ^3.9.6
         version: 3.9.6
 
-  wikiMissingPositions:
+  userscripts/wikiMissingPositions:
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -190,7 +190,7 @@ importers:
         specifier: ^40.0.0
         version: 40.0.0(stylelint@17.15.0(supports-color@10.2.2)(typescript@5.9.3))
 
-  wikiPersonAlias:
+  userscripts/wikiPersonAlias:
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1

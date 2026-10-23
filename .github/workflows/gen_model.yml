@@ -43,7 +43,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add bgq/internal/model/ bgq/frontend/src/schema-data.js bgq/frontend/src/infobox-fields.js wikiMissingPositions/src/position-ids.js wikiBatch/src/infobox-field-order.ts 2>/dev/null || true
+          git add bgq/internal/model/ bgq/frontend/src/schema-data.js bgq/frontend/src/infobox-fields.js userscripts/userscript-common/position-ids.js userscripts/wikiEpStaffRelate/src/positions.generated.js userscripts/wikiBatch/src/infobox-field-order.ts 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "无变更"
           else

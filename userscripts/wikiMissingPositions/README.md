@@ -14,7 +14,7 @@
 
 需要先安装脚本管理器（Tampermonkey / Violentmonkey）。
 
-[安装链接](https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiMissingPositions/dist/wikiMissingPositions.user.js)
+[安装链接](https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/userscripts/wikiMissingPositions/dist/wikiMissingPositions.user.js)
 
 ### 组件
 

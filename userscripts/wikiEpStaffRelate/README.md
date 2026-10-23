@@ -18,7 +18,7 @@
 
 ### 油猴脚本
 
-[安装链接](https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/wikiEpStaffRelate/dist/wikiEpStaffRelate.user.js)
+[安装链接](https://raw.githubusercontent.com/inchei/bangumi-wiki-tools/main/userscripts/wikiEpStaffRelate/dist/wikiEpStaffRelate.user.js)
 
 ### 组件
 

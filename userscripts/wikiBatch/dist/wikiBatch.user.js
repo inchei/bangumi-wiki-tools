@@ -163,7 +163,7 @@
 
                 </div>
                 <div class="setup-footer">
-                    <a href="https://github.com/inchei/bangumi-wiki-tools/tree/main/wikiBatch" target="_blank">
+                    <a href="https://github.com/inchei/bangumi-wiki-tools/tree/main/userscripts/wikiBatch" target="_blank">
                         <morph-icon data-icon="github" size="16"></morph-icon> GitHub
                     </a>
                 </div>
