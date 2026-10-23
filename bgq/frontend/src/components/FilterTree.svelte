@@ -66,7 +66,7 @@
     [CTX_PERSON]: "field",
     [CTX_STAFF_PERSON]: "field",
     [CTX_CHARACTER]: "field",
-    [CTX_EPISODE]: "field",
+    [CTX_EPISODE]: "ep_name",
   });
   let newTypeSelect = $derived(newTypeSelectMap[effectiveCtx] || "field");
   function setNewTypeSelect(val) {
@@ -78,7 +78,7 @@
   );
   $effect(() => {
     if (!typeOptions.some((opt) => opt.value === newTypeSelect)) {
-      newTypeSelectMap[$queryTarget] = typeOptions[0]?.value || "field";
+      newTypeSelectMap[effectiveCtx] = typeOptions[0]?.value || "field";
     }
   });
 
