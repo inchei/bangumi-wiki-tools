@@ -185,7 +185,7 @@
     }
   });
 
-  onMount(async () => {
+  onMount(() => {
     // Guard against the global color transition flashing on load while the
     // saved/system theme is being applied (see html.no-transitions in
     // global.css); re-enable after the initial paint.
@@ -212,18 +212,58 @@
         if (themeMode === "system") applyTheme("system");
       });
 
-    // Restore query from share link (?q=<payload>)
-    const payload = new URLSearchParams(window.location.search).get(
-      SHARE_PARAM,
-    );
-    if (payload) {
+    let destroyed = false;
+    const subscriptions = [];
+
+    async function restoreShareLink() {
+      const payload = new URLSearchParams(window.location.search).get(
+        SHARE_PARAM,
+      );
+      if (!payload) return;
       try {
         const state = await decodeShareState(payload);
+        if (destroyed) return;
         applyShareState(state);
       } catch (e) {
         console.error("分享链接还原失败，已忽略:", e);
+        return;
+      }
+
+      function removeShareParam() {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has(SHARE_PARAM)) return;
+        url.searchParams.delete(SHARE_PARAM);
+        window.history.replaceState(window.history.state, "", url);
+      }
+
+      for (const store of [
+        queryTarget,
+        subjectRootLogic,
+        personRootLogic,
+        characterRootLogic,
+        episodeRootLogic,
+        outputColumns,
+        sortRules,
+        resultLimit,
+      ]) {
+        let initial = true;
+        subscriptions.push(
+          store.subscribe(() => {
+            if (initial) {
+              initial = false;
+              return;
+            }
+            removeShareParam();
+          }),
+        );
       }
     }
+
+    void restoreShareLink();
+    return () => {
+      destroyed = true;
+      for (const unsubscribe of subscriptions) unsubscribe();
+    };
   });
 </script>
 
