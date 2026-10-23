@@ -12,6 +12,7 @@ const result = await esbuild.build({
   platform: 'browser',
   target: 'es2022',
   charset: 'utf8',
+  alias: { '@common': '../userscript-common' },
 });
 
 const js = result.outputFiles[0].text;

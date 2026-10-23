@@ -3,7 +3,7 @@ import { personAliasFallbackBatch } from './aliases.js';
 import { getConvertedNames } from './opencc.js';
 import { normalize, autoSearchAndRelate, recolorRepeatRows } from './search.js';
 import { epsCache } from './ep.js';
-import { parseAppearEps, genAppearEps } from './appear-eps.js';
+import { parseAppearEps, genAppearEps } from '@common/appear-eps.js';
 import { createDraggableTipBox } from './tip-box.js';
 
 export async function updAppearEps(

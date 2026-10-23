@@ -1,6 +1,7 @@
 function isStrictInt(str) {
   return /^-?\d+$/.test(str);
 }
+
 export function sortAppearEps(eps) {
   return eps.sort((a, b) => {
     const isANum = isStrictInt(a);
@@ -43,8 +44,8 @@ export function parseAppearEps(input) {
 }
 
 export function genAppearEps(epArr) {
+  if (!epArr || !epArr.length) return '';
   epArr = sortAppearEps([...new Set(epArr)]);
-  const isStrictInt = (str) => /^-?\d+$/.test(str);
 
   const integers = epArr.filter(isStrictInt).map(Number);
   const others = epArr.filter((e) => !isStrictInt(e));

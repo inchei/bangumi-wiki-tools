@@ -1,10 +1,9 @@
 import { roleIdMap } from './state.js';
-import { POSITION_IDS } from '../../wikiMissingPositions/src/position-ids.js';
-import { parseAppearEps } from './appear-eps.js';
+import { POSITION_IDS } from '@common/position-ids.js';
+import { parseAppearEps } from '@common/appear-eps.js';
 
 // DOM 处理沿用 bangumi-auto-relate-infobox 的规则（childNodes[0] 为职位
-// tip，值文本取 tip 外的全部内容）；职位表沿用 wikiMissingPositions 的
-// POSITION_IDS 权威数据
+// tip，值文本取 tip 外的全部内容）；职位表使用共享 POSITION_IDS 数据
 const SPLIT_RULE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；:：&＆\\]/;
 const FILTER_WORDS = ['CV:', 'CV\\.', 'feat\\.', '\\*'];
 // 跳过集数标记类条目：纯数字、数字区间（1-12）、OP/ED/SP（可带数字）

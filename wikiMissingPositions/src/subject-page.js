@@ -1,6 +1,6 @@
-import { POSITION_IDS } from './position-ids.js';
+import { POSITION_IDS } from '@common/position-ids.js';
 import { getProvider, getShow } from './api.js';
-import { genAppearEps } from './appear-eps.js';
+import { genAppearEps } from '@common/appear-eps.js';
 import { checkExistingPerson } from './person.js';
 import { BANGUMI_ERROR_TEXT, ourApiErrorText } from './errors.js';
 import { createNotifyPopup } from './popup.js';

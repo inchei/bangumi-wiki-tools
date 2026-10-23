@@ -1,6 +1,6 @@
-import { POSITION_IDS } from './position-ids.js';
+import { POSITION_IDS } from '@common/position-ids.js';
 import { getProvider } from './api.js';
-import { genAppearEps, parseAppearEps, sortAppearEps } from './appear-eps.js';
+import { genAppearEps, parseAppearEps, sortAppearEps } from '@common/appear-eps.js';
 import { showPendingEps } from './popup.js';
 import { ourApiErrorText } from './errors.js';
 
@@ -77,7 +77,7 @@ async function processEpisodesData(data, queryName) {
       const li = addSubjectLi(sid, posId, entry.name);
       const epInput = li.querySelector('[name$="[appear_eps]"]');
       if (epInput) {
-        const currentSet = parseAppearEps(epInput.value);
+        const currentSet = new Set(parseAppearEps(epInput.value));
         const hasAll = labels.every((l) => currentSet.has(l));
         if (!hasAll) {
           none = false;

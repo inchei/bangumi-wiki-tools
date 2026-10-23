@@ -1,4 +1,4 @@
-import { genAppearEps } from './appear-eps.js';
+import { genAppearEps } from '@common/appear-eps.js';
 
 function makeDraggable(popup, handle, excludeSelector) {
   let offX = 0,
