@@ -8,7 +8,6 @@
     queryTarget,
     CTX_SUBJECT,
     CTX_PERSON,
-    CTX_STAFF_PERSON,
     CTX_CHARACTER,
     CTX_EPISODE,
     focusRequest,
@@ -60,27 +59,22 @@
 
   let containerEl;
   // Per-context state for the "add condition" dropdown (nested FilterTrees
-  // for relation/staff subject_conditions use a different ctx than the root)
-  let newTypeSelectMap = $state({
-    [CTX_SUBJECT]: "field",
-    [CTX_PERSON]: "field",
-    [CTX_STAFF_PERSON]: "field",
-    [CTX_CHARACTER]: "field",
-    [CTX_EPISODE]: "ep_name",
-  });
-  let newTypeSelect = $derived(newTypeSelectMap[effectiveCtx] || "field");
-  function setNewTypeSelect(val) {
-    newTypeSelectMap[effectiveCtx] = val;
-  }
-
+  // for relation/staff subject_conditions use a different ctx than the root);
+  // remembered values missing from typeOptions fall back to the first option
+  // via newTypeSelect.
+  let newTypeSelectMap = $state({});
   const typeOptions = $derived(
     getConditionTypeOptions(effectiveCtx, $queryTarget),
   );
-  $effect(() => {
-    if (!typeOptions.some((opt) => opt.value === newTypeSelect)) {
-      newTypeSelectMap[effectiveCtx] = typeOptions[0]?.value || "field";
-    }
+  let newTypeSelect = $derived.by(() => {
+    const remembered = newTypeSelectMap[effectiveCtx];
+    return typeOptions.some((opt) => opt.value === remembered)
+      ? remembered
+      : typeOptions[0]?.value || "field";
   });
+  function setNewTypeSelect(val) {
+    newTypeSelectMap[effectiveCtx] = val;
+  }
 
   $effect(() => {
     const req = $focusRequest;

@@ -63,7 +63,7 @@ Setup after clone: `git config core.hooksPath .husky`.
 - pnpm only (never npm/yarn); Python tooling via `uv` (scripts use PEP 723 inline metadata, e.g. `uv run person_alias.py`).
 - Conventional commits, one-line English title: `feat(bgq): ...`, `fix(bgq): ...`, `docs: ...`, `chore: ...`.
 - NEVER commit unless the user explicitly asks — the hook auto-bumps versions and rebuilds `dist/`.
-- No code comments unless explicitly asked.
+- No code comments unless explicitly asked; a comment that exists must describe current behavior only, never narrate old/removed behavior ("previously", "no longer", "used to", "legacy … was").
 - Go features live behind JSONL archive data or a pre-ingested DuckDB db; infobox fields are wiki-text extracted with `regexp_extract()`.
 - Quote-escape user-controlled output columns/sort labels (`quotedLabel()` in `internal/query/builder_util.go`), never interpolate.
 - In db mode, `Engine.executeSQL` prepends `SET enable_external_access=false`; HTTP handlers return a generic `查询失败（请求 ID: xxxx）` with the detail logged server-side — never put `err.Error()` in a response.
