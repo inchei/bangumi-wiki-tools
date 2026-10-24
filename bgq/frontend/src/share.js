@@ -18,7 +18,11 @@ import {
   resetStructureVersions,
 } from "./stores.js";
 import { getFiltersForAPI, applyFiltersFromAPI } from "./logic-tree.js";
-import { assocPrefixInfos, assocRowsFromFilters } from "./columns.js";
+import {
+  assocPrefixInfos,
+  assocRowsFromFilters,
+  parseAssocToken,
+} from "./columns.js";
 import { get } from "svelte/store";
 
 const STATE_VERSION = 1;
@@ -129,11 +133,21 @@ export function applyShareState(state) {
     ),
   );
   const filters = assocRowsFromFilters(target, getRootLogic().items);
+  // Only managed tokens (field/group forms) get rows; raw forms like
+  // "episode.count" stay in the main input and must not spawn empty rows.
+  const rowPrefix = (col) => {
+    const prefix = col.slice(0, col.indexOf("."));
+    const p = parseAssocToken(col, prefix);
+    return p && !p.raw ? prefix : null;
+  };
   const rows = [
     ...new Set(
       (Array.isArray(state.columns) ? state.columns : [])
-        .filter((col) => typeof col === "string" && col.includes("."))
-        .map((col) => col.slice(0, col.indexOf(".")))
+        .filter((col) => {
+          if (typeof col !== "string" || !col.includes(".")) return false;
+          return rowPrefix(col) != null;
+        })
+        .map(rowPrefix)
         .filter((prefix) => prefixes.has(prefix)),
     ),
   ];
