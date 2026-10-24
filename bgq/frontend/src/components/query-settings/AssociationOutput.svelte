@@ -88,22 +88,49 @@
     return [...prefixInfoMap.keys()].filter((p) => !have.has(p));
   }
 
+  function replaceSeededStaffColumns(tokens, prefix, filters) {
+    if (target !== "subject" || !prefix.startsWith("{")) return [];
+    const replaced = [];
+    for (const position of prefix.slice(1, -1).split("|")) {
+      if (filters.has(position)) continue;
+      const oldIndex = tokens.indexOf(
+        buildAssocToken(position, DEFAULT_ROW_FIELDS, []),
+      );
+      if (oldIndex >= 0) {
+        tokens.splice(oldIndex, 1);
+        replaced.push(position);
+      }
+    }
+    return replaced;
+  }
+
   // Cleanup invalid rows/tokens left by IME intermediate pinyin (e.g. "d",
   // "da" for "导演"). Runs once per target.
   $effect(() => {
     const rows = $manualAssoc[target] || [];
+    const active = new Set(filterAssocPrefixes);
+    const tokens = splitTokens(get(outputColumns));
+    const intersectionPositions = new Set(
+      target === "subject"
+        ? filterAssocPrefixes
+            .filter((prefix) => prefix.startsWith("{"))
+            .flatMap((prefix) => prefix.slice(1, -1).split("|"))
+        : [],
+    );
     const validRows = rows.filter(
-      (r) => !r.prefix || prefixInfoMap.has(r.prefix),
+      (r) =>
+        (!r.prefix || prefixInfoMap.has(r.prefix)) &&
+        (!intersectionPositions.has(r.prefix) ||
+          active.has(r.prefix) ||
+          findManagedIndex(tokens, r.prefix) >= 0),
     );
     if (validRows.length !== rows.length) {
       manualAssoc.update((m) => ({ ...m, [target]: validRows }));
       bumpAssocStructureVersion();
     }
-    const tokens = splitTokens(get(outputColumns));
     const validTokens = tokens.filter((tok) => {
       if (!tok.includes(".")) return true;
       const pfx = tok.slice(0, tok.indexOf("."));
-      // Keep association tokens only if prefix is known for this target
       return prefixInfoMap.has(pfx);
     });
     if (validTokens.length !== tokens.length) writeTokens(validTokens);
@@ -138,32 +165,52 @@
         [target]: [...new Set([...kept, ...toMark])],
       }));
     }
-    if (toSeed.length > 0) {
+
+    // Auto-migrate, independent of seeding: an active intersection swaps the
+    // pristine default columns of its member positions (token + row), in
+    // either direction.
+    const tokens = splitTokens(get(outputColumns));
+    let tokensChanged = false;
+    const migrated = [];
+    for (const p of filters) {
+      for (const position of replaceSeededStaffColumns(tokens, p, filters)) {
+        migrated.push(position);
+        tokensChanged = true;
+      }
+    }
+    // Migrated positions were removed programmatically, not by a user row
+    // delete — un-mark them so dropping back to fewer positions re-seeds.
+    if (migrated.length > 0) {
+      assocSeeded.update((m) => ({
+        ...m,
+        [target]: (m[target] || []).filter((p) => !migrated.includes(p)),
+      }));
+    }
+
+    for (const p of toSeed) {
+      if (findManagedIndex(tokens, p) >= 0) continue;
+      const info = prefixInfoMap.get(p);
+      const tk = buildAssocToken(
+        p,
+        DEFAULT_ROW_FIELDS,
+        info?.dual ? DEFAULT_ROW_FIELDS : [],
+      );
+      if (tk) {
+        tokens.push(tk);
+        tokensChanged = true;
+      }
+    }
+    if (migrated.length > 0 || toSeed.length > 0) {
       manualAssoc.update((m) => ({
         ...m,
         [target]: [
-          ...(m[target] || []),
+          ...(m[target] || []).filter((r) => !migrated.includes(r.prefix)),
           ...toSeed.map((p) => ({ prefix: p, _id: nextAssocId() })),
         ],
       }));
       bumpAssocStructureVersion();
-      const tokens = splitTokens(get(outputColumns));
-      let added = false;
-      for (const p of toSeed) {
-        if (findManagedIndex(tokens, p) >= 0) continue;
-        const info = prefixInfoMap.get(p);
-        const tk = buildAssocToken(
-          p,
-          DEFAULT_ROW_FIELDS,
-          info?.dual ? DEFAULT_ROW_FIELDS : [],
-        );
-        if (tk) {
-          tokens.push(tk);
-          added = true;
-        }
-      }
-      if (added) writeTokens(tokens);
     }
+    if (tokensChanged) writeTokens(tokens);
   });
 
   function writeTokens(tokens) {

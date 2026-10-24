@@ -54,6 +54,45 @@ export const ENTITY_LABELS = {
   episode: "剧集",
 };
 
+function staffIntersectionPrefix(positions) {
+  const names = positions?.map((p) => p?.trim());
+  if (!names || names.length < 2 || names.some((p) => !p || p === "任意"))
+    return null;
+  return `{${names.join("|")}}`;
+}
+
+export function assocPrefixInfos(
+  target,
+  typeCode = 0,
+  rootItems = [],
+  columns = [],
+  rows = [],
+) {
+  const infos = assocPrefixesForTarget(target, typeCode);
+  if (target !== "subject") return infos;
+  const positions = new Set(prioritizedPositions(0));
+  const prefixes = [
+    ...assocRowsFromFilters(target, rootItems).map((row) => row.prefix),
+    ...(columns || [])
+      .filter((col) => typeof col === "string" && col.includes("."))
+      .map((col) => col.slice(0, col.indexOf("."))),
+    ...rows.map((row) => row.prefix),
+  ];
+  return [
+    ...infos,
+    ...[...new Set(prefixes)]
+      .filter((prefix) => {
+        if (typeof prefix !== "string" || !/^\{[^{}]+\}$/.test(prefix))
+          return false;
+        const names = prefix.slice(1, -1).split("|");
+        return (
+          names.length > 1 && names.every((name) => positions.has(name.trim()))
+        );
+      })
+      .map((prefix) => ({ prefix, entity: "person" })),
+  ];
+}
+
 // assocPrefixesForTarget returns the association prefixes usable in output
 // columns for a query target:
 //   { prefix, entity, dual }
@@ -64,7 +103,7 @@ export const ENTITY_LABELS = {
 // that type sort first; other prefixes keep their relative order. For the
 // subject target the matching relations AND positions come before the rest
 // of either kind (rather than all relations first, then all positions).
-export function assocPrefixesForTarget(target, typeCode = 0) {
+function assocPrefixesForTarget(target, typeCode = 0) {
   const positions = prioritizedPositions(typeCode);
   const relations = prioritizedRelations(typeCode);
   switch (target) {
@@ -142,7 +181,9 @@ export function assocRowsFromFilters(target, rootItems) {
           item.staff.positions?.length > 0
             ? item.staff.positions
             : [item.staff.position];
-        for (const p of parts) push(p, "person");
+        const intersection = staffIntersectionPrefix(parts);
+        if (intersection) push(intersection, "person");
+        else for (const p of parts) push(p, "person");
       }
       if (item.character) push(item.character.type, "character");
       if (item.subject_cast) push(item.subject_cast.type, "character");
@@ -360,8 +401,13 @@ export const DEFAULT_ROW_FIELDS = ["id", "name"];
 //                              input (whole-column replacement only happens
 //                              for full-token stages). Trailing "|" is
 //                              harmless — the backend skips empty members.
-export function makeOutputTokenLister(target, plainFields, typeCode = 0) {
-  const infos = assocPrefixesForTarget(target, typeCode);
+export function makeOutputTokenLister(
+  target,
+  plainFields,
+  typeCode = 0,
+  extraInfos = [],
+) {
+  const infos = [...assocPrefixesForTarget(target, typeCode), ...extraInfos];
   const prefixMap = new Map(infos.map((i) => [i.prefix, i]));
   const stage1 = [...new Set([...plainFields, ...infos.map((i) => i.prefix)])];
   const subjectFields = subjectFieldsForType(typeCode);

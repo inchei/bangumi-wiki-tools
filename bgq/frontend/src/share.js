@@ -18,7 +18,7 @@ import {
   resetStructureVersions,
 } from "./stores.js";
 import { getFiltersForAPI, applyFiltersFromAPI } from "./logic-tree.js";
-import { assocPrefixesForTarget, assocRowsFromFilters } from "./columns.js";
+import { assocPrefixInfos, assocRowsFromFilters } from "./columns.js";
 import { get } from "svelte/store";
 
 const STATE_VERSION = 1;
@@ -123,7 +123,11 @@ export function applyShareState(state) {
   if (state.sort) sortRules.set(state.sort);
   if (state.limit) resultLimit.set(state.limit);
   const target = get(queryTarget);
-  const prefixes = new Set(assocPrefixesForTarget(target).map((r) => r.prefix));
+  const prefixes = new Set(
+    assocPrefixInfos(target, 0, getRootLogic().items, state.columns).map(
+      (r) => r.prefix,
+    ),
+  );
   const filters = assocRowsFromFilters(target, getRootLogic().items);
   const rows = [
     ...new Set(

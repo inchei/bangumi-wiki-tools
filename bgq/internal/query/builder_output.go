@@ -29,6 +29,10 @@ func (b *SQLBuilder) assocLimit() int {
 // column or a sort field) and records the junction CTE it requires.
 func (b *SQLBuilder) addCTENeed(n *outputCTENeeds, prefix string) {
 	switch {
+	case b.target == "subject" && strings.HasPrefix(prefix, "{"):
+		if _, ok := b.staffIntersectionPositions(prefix); ok {
+			n.persons = true
+		}
 	case prefix == "episode":
 		n.episodes = true
 	case len(b.getRelationIDsForName(prefix)) > 0:
@@ -136,6 +140,12 @@ func (b *SQLBuilder) assocOutputColumn(col string) (string, bool, error) {
 	var subquery string
 	var err error
 	switch {
+	case b.target == "subject" && strings.HasPrefix(prefix, "{"):
+		if !isSubjectLevel {
+			if positions, ok := b.staffIntersectionPositions(prefix); ok {
+				subquery, err = b.buildStaffIntersectionOutput(prefix, positions, field)
+			}
+		}
 	case prefix == "episode":
 		if !isSubjectLevel {
 			subquery, err = b.buildEpisodeOutput(field)

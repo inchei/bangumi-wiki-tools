@@ -6,6 +6,7 @@
   import {
     queryTarget,
     outputColumns,
+    manualAssoc,
     sortRules,
     resultLimit,
     assocLimit,
@@ -26,7 +27,7 @@
   import {
     assocRowsFromFilters,
     assocFieldsFromFilters,
-    assocPrefixesForTarget,
+    assocPrefixInfos,
     parseAssocToken,
     makeOutputTokenLister,
     sortColumnSuggestions,
@@ -129,7 +130,13 @@
 
   let prefixInfoMap = $derived(
     new Map(
-      assocPrefixesForTarget(target, subjectType).map((i) => [i.prefix, i]),
+      assocPrefixInfos(
+        target,
+        subjectType,
+        rootItems,
+        splitTokens($outputColumns),
+        $manualAssoc[target] || [],
+      ).map((i) => [i.prefix, i]),
     ),
   );
 
@@ -248,7 +255,12 @@
   // fragment inside {...}) is empty — i.e. not searching — priority
   // suggestions are pinned to the top of the list.
   let getColumnTokenList = $derived.by(() => {
-    const base = makeOutputTokenLister(target, plainColumns, subjectType);
+    const base = makeOutputTokenLister(
+      target,
+      plainColumns,
+      subjectType,
+      [...prefixInfoMap.values()].filter((i) => i.prefix.startsWith("{")),
+    );
     const { general, members } = suggestionPriority;
     return (token, inner) => {
       const list = base(token);

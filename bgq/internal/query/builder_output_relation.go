@@ -65,6 +65,40 @@ func (b *SQLBuilder) buildStaffOutput(position, field string) (string, error) {
 	})
 }
 
+func (b *SQLBuilder) staffIntersectionPositions(prefix string) ([][]int, bool) {
+	if !strings.HasPrefix(prefix, "{") || !strings.HasSuffix(prefix, "}") {
+		return nil, false
+	}
+	names := strings.Split(prefix[1:len(prefix)-1], "|")
+	if len(names) < 2 {
+		return nil, false
+	}
+	positions := make([][]int, 0, len(names))
+	for _, name := range names {
+		name = strings.TrimSpace(name)
+		ids := b.getPositionIDsForName(name)
+		if len(ids) == 0 {
+			return nil, false
+		}
+		positions = append(positions, ids)
+	}
+	return positions, true
+}
+
+func (b *SQLBuilder) buildStaffIntersectionOutput(prefix string, positions [][]int, field string) (string, error) {
+	var predicates []string
+	for _, ids := range positions[1:] {
+		predicates = append(predicates, fmt.Sprintf("EXISTS (SELECT 1 FROM subject_persons sp2 WHERE sp2.subject_id = sp1.subject_id AND sp2.person_id = sp1.person_id AND sp2.position IN (%s))", intListToSQL(ids)))
+	}
+	junction := fmt.Sprintf("(SELECT DISTINCT sp1.subject_id, sp1.person_id FROM subject_persons sp1 WHERE sp1.position IN (%s) AND %s)", intListToSQL(positions[0]), strings.Join(predicates, " AND "))
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: junction, ja: "sp", mainFK: "subject_id",
+		entityJoin: "LEFT JOIN persons p ON sp.person_id = p.person_id", typeCond: "TRUE",
+		entityAlias: "p", entityPK: "person_id", field: field, label: quotedLabel(prefix, field),
+		directFields: personDirectFields,
+	})
+}
+
 // buildStaffOutputForPerson generates a subquery for a person's staff position
 // (target: person), outputting a field of the related subject — e.g.
 // 系列构成.name returns the first subject where the person holds that position,
