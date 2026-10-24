@@ -62,6 +62,27 @@ func TestValidateRejectsGroupSort(t *testing.T) {
 	}
 }
 
+func TestValidateMultiStaffAppearEps(t *testing.T) {
+	for _, positions := range [][]string{{"原作"}, {"原作", "导演"}} {
+		cfg := &Config{Filters: []Filter{{Logic: &LogicFilter{Op: "and", Items: []Filter{
+			{Staff: &StaffFilter{Positions: positions, Conditions: []Filter{{Logic: &LogicFilter{Op: "or", Items: []Filter{
+				{Field: &FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
+				{Logic: &LogicFilter{Op: "and", Items: []Filter{
+					{Field: &FieldFilter{Field: "appear_eps", Operator: "empty", Value: ""}},
+				}}},
+			}}}}}},
+		}}}}}
+		err := cfg.Validate()
+		if len(positions) > 1 {
+			if err == nil || !strings.Contains(err.Error(), "多职位 staff 条件不支持 appear_eps") {
+				t.Fatalf("expected rejection for %v, got %v", positions, err)
+			}
+		} else if err != nil {
+			t.Fatalf("single position rejected: %v", err)
+		}
+	}
+}
+
 func TestValidateTarget(t *testing.T) {
 	for _, target := range []string{"", "subject", "person", "character", "episode"} {
 		cfg := &Config{Target: target, Filters: []Filter{{Field: &FieldFilter{Field: "name", Operator: "contains", Value: "x"}}}}

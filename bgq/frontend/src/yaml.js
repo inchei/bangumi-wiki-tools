@@ -635,6 +635,9 @@ function checkNode(key, v, errors) {
       for (const n of names) {
         checkName("staff.position", n, positionsByType(0), errors);
       }
+      if (v.positions?.length > 1 && hasField(v.conditions, "appear_eps")) {
+        errors.add("多职位 staff 条件不支持 appear_eps（该字段属于单个职位）");
+      }
       checkModeAndConditions(v, errors);
       break;
     }
@@ -678,6 +681,16 @@ function checkNode(key, v, errors) {
       }
       break;
   }
+}
+
+function hasField(filters, name) {
+  return (
+    Array.isArray(filters) &&
+    filters.some(
+      (filter) =>
+        filter?.field?.field === name || hasField(filter?.logic?.items, name),
+    )
+  );
 }
 
 function checkName(label, name, set, errors) {

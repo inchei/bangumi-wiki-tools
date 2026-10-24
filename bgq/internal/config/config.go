@@ -107,6 +107,25 @@ type StaffFilter struct {
 	Conditions []Filter    `yaml:"conditions" json:"conditions"`                   // conditions on person (subject target) or subject (person target)
 }
 
+func (f *StaffFilter) HasMultiPositionAppearEps() bool {
+	if len(f.Positions) <= 1 {
+		return false
+	}
+	var hasField func([]Filter) bool
+	hasField = func(filters []Filter) bool {
+		for _, filter := range filters {
+			if filter.Field != nil && filter.Field.Field == "appear_eps" {
+				return true
+			}
+			if filter.Logic != nil && hasField(filter.Logic.Items) {
+				return true
+			}
+		}
+		return false
+	}
+	return hasField(f.Conditions)
+}
+
 // CharacterFilter filters by character in a subject.
 // Conditions support character-level filter types on the associated character.
 type CharacterFilter struct {

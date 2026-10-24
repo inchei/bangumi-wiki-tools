@@ -213,6 +213,9 @@ func validateFilter(f *Filter, target string) error {
 			return err
 		}
 	case f.Staff != nil:
+		if f.Staff.HasMultiPositionAppearEps() {
+			return fmt.Errorf("多职位 staff 条件不支持 appear_eps（该字段属于单个职位）")
+		}
 		if f.Staff.Mode == "" {
 			f.Staff.Mode = "any"
 		}

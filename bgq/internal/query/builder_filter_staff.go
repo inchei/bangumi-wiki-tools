@@ -8,6 +8,9 @@ import (
 )
 
 func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
+	if f.HasMultiPositionAppearEps() {
+		return "", fmt.Errorf("多职位 staff 条件不支持 appear_eps（该字段属于单个职位）")
+	}
 	nested := getNestedConfig(b.target, "staff")
 	if nested == nil {
 		return "", fmt.Errorf("staff filter not supported for target %s", b.target)

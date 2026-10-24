@@ -1,6 +1,7 @@
 package query
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -131,6 +132,46 @@ func TestOutputColumnsTriggerCTELoading(t *testing.T) {
 		if strings.Contains(sqlMin, unwanted) {
 			t.Errorf("generated SQL unexpectedly includes %s:\n%s", unwanted, sqlMin)
 		}
+	}
+}
+
+func TestMultiStaffAppearEpsCondition(t *testing.T) {
+	for _, positions := range [][]string{{"原作"}, {"原作", "导演"}} {
+		t.Run(strings.Join(positions, "_"), func(t *testing.T) {
+			cfg := &config.Config{
+				Filters: []config.Filter{{Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+					{Staff: &config.StaffFilter{
+						Position: "原作", Positions: positions, Mode: "all",
+						Conditions: []config.Filter{{Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+							{Field: &config.FieldFilter{Field: "appear_eps", Operator: "empty", Value: ""}},
+						}}}},
+						CountOp: "eq", CountVal: "1",
+					}},
+				}}}},
+				Output: &config.Output{Columns: []string{"id", "name", "出版社", "原作.{id|name}"}},
+				Limit:  5,
+			}
+			b := NewSQLBuilder(cfg, testExecuteDataDir())
+			sql, err := b.Build()
+			if len(positions) > 1 {
+				if err == nil || !strings.Contains(err.Error(), "多职位 staff 条件不支持 appear_eps") {
+					t.Fatalf("expected multi-position appear_eps rejection, got SQL %s, error %v", sql, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(sql, "subject_persons.appear_eps") {
+				t.Errorf("generated SQL missing junction condition: %s", sql)
+			}
+			if *execute {
+				SetDuckDBPath(filepath.Join(testBinDir(), "duckdb"))
+				if _, err := NewEngine("", testExecuteDataDir()).executeSQL(t.Context(), sql); err != nil {
+					t.Fatalf("Execute failed:\nSQL: %s\nError: %v", sql, err)
+				}
+			}
+		})
 	}
 }
 
