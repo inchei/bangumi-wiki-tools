@@ -1,0 +1,47 @@
+target_index: 105209
+filters:
+  - logic:
+      op: and
+      items:
+        - field:
+            field: type
+            operator: eq
+            value: '2'
+        - episode:
+            mode: all
+            logic:
+              op: and
+              items:
+                - field:
+                    field: name
+                    operator: empty
+                    value: ''
+                - field:
+                    field: airdate
+                    operator: empty
+                    value: ''
+        - episode:
+            mode: count
+            logic:
+              op: and
+              items: []
+            count_op: gte
+            count_val: '2'
+        - field:
+            field: platform
+            operator: eq
+            value: '1'
+        - tag:
+            operator: contains
+            value: 日本
+            negate: false
+output:
+  columns:
+    - id
+    - name
+    - episode.count
+sort:
+  - field: rank
+    direction: asc
+limit: 1000
+
