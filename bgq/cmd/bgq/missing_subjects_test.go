@@ -36,6 +36,9 @@ func TestBuildCheckSQL_BookExcludesSeries(t *testing.T) {
 	if !strings.Contains(sql, "s.type = 1") {
 		t.Error("should filter subjects.type = 1")
 	}
+	if !strings.Contains(sql, `sp.type = 1`) {
+		t.Error("series member subquery should require a book series target")
+	}
 	// anthology volumes are kept via the volume's own 短篇集 meta tag
 	if !strings.Contains(sql, `LIST_CONTAINS(COALESCE(s.meta_tags, []), '短篇集')`) {
 		t.Error("series filter should keep anthology volumes via the volume's own meta tag")
