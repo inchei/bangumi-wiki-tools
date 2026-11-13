@@ -30,18 +30,15 @@ func TestBuildCheckSQL_BookExcludesSeries(t *testing.T) {
 	positions := map[int]string{2001: "作者"}
 	sql := buildCheckSQL(1, "川原砾", positions, 0)
 
-	if !strings.Contains(sql, "series_ids") {
-		t.Error("book type (1) should include series_ids CTE")
-	}
 	if !strings.Contains(sql, "relation_type = 1002") {
-		t.Error("series_ids should filter relation_type = 1002")
+		t.Error("series member subquery should filter relation_type = 1002")
 	}
 	if !strings.Contains(sql, "s.type = 1") {
 		t.Error("should filter subjects.type = 1")
 	}
-	// series filter should appear inside the pairs subquery, not as UNION ALL
-	if !strings.Contains(sql, "AND s.id NOT IN (SELECT id FROM series_ids)") {
-		t.Error("series filter clause should be present for book type")
+	// anthology volumes are kept via the volume's own 短篇集 meta tag
+	if !strings.Contains(sql, `LIST_CONTAINS(COALESCE(s.meta_tags, []), '短篇集')`) {
+		t.Error("series filter should keep anthology volumes via the volume's own meta tag")
 	}
 }
 
@@ -55,7 +52,7 @@ func TestBuildCheckSQL_AnimeNoSeriesFilter(t *testing.T) {
 	if !strings.Contains(sql, "s.type = 2") {
 		t.Error("should filter subjects.type = 2")
 	}
-	if strings.Contains(sql, "NOT IN (SELECT id FROM series_ids)") {
+	if strings.Contains(sql, "relation_type = 1002") {
 		t.Error("anime type (2) should NOT apply the series filter")
 	}
 }

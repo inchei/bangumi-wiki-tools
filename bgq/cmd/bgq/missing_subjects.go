@@ -137,7 +137,11 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string, ta
 	}
 
 	posIDs := sortedKeys(positions)
-	hasSeries := typeCode == 1
+
+	seriesFilterSQL := ""
+	if typeCode == 1 {
+		seriesFilterSQL = "\n    AND " + query.SeriesVolumeKeepFilter("s")
+	}
 
 	// Build positions_map VALUES list: (id, '职位名'), (id, '职位名'), ...
 	var posValues strings.Builder
@@ -154,16 +158,7 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string, ta
 	infoboxPatternSQL := query.EscapeLiteral(infoboxPairPattern)
 
 	var sb strings.Builder
-
-	// CTE 1 (optional): series_ids — only for book type (1).
 	cteCount := 0
-	if hasSeries {
-		sb.WriteString(`WITH series_ids AS (
-  SELECT DISTINCT subject_id AS id FROM subject_relations WHERE relation_type = 1002
-),
-`)
-		cteCount++
-	}
 
 	// CTE: linked — pre-compute (subject_id, position) where this person is
 	// already a registered staff member.
@@ -203,11 +198,9 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string, ta
          UNNEST(regexp_extract_all(s.infobox, '%s', 1)) AS k,
          UNNEST(regexp_extract_all(s.infobox, '%s', 2)) AS v
   FROM subjects s
-  WHERE s.type = %d%s
-%s
+  WHERE s.type = %d%s%s
 )
-`, withPrefix(cteCount), infoboxPatternSQL, infoboxPatternSQL, typeCode, prefilter,
-		indentSeriesFilter(hasSeries))
+`, withPrefix(cteCount), infoboxPatternSQL, infoboxPatternSQL, typeCode, prefilter, seriesFilterSQL)
 
 	// Final SELECT: subjects whose infobox value for a position key mentions
 	// the person (with delimiter boundaries), but no linked staff entry
@@ -229,26 +222,6 @@ func withPrefix(cteCount int) string {
 		return "WITH "
 	}
 	return ""
-}
-
-// seriesFilter returns the AND-clause that excludes series subjects (only
-// applied for book type 1, where series subjects are aggregate entries that
-// should not themselves be checked for missing staff).
-func seriesFilter(hasSeries bool) string {
-	if hasSeries {
-		return "AND s.id NOT IN (SELECT id FROM series_ids)"
-	}
-	return ""
-}
-
-// indentSeriesFilter returns seriesFilter() indented for embedding inside the
-// pairs subquery's WHERE clause (two-level indent: 4 + 4 spaces).
-func indentSeriesFilter(hasSeries bool) string {
-	s := seriesFilter(hasSeries)
-	if s == "" {
-		return ""
-	}
-	return "    " + s
 }
 
 // isAllowedOrigin reports whether an Origin/Referer header value is from one of

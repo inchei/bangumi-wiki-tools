@@ -13,8 +13,6 @@ import (
 	"github.com/inchei/bangumi-query/internal/query"
 )
 
-const seriesRelationType = 1002
-
 // noRelationQuery hard-codes the "无关联人物" (invalid person) filter: a person
 // with no staff entries, no character associations, and no person relations.
 // This is the filter previously defined in index_filters/invalid_person.yaml,
@@ -162,9 +160,7 @@ func loadCharacterNames(archiveDir string, dbPath string) (map[string]bool, erro
 func loadSubjectsFromDB(ctx context.Context, dbPath string) ([]subjectRecord, error) {
 	sql := fmt.Sprintf(`SELECT id, name, type, infobox FROM subjects
 		WHERE type IN (1, 2, 3, 4, 6)
-		  AND NOT (type = 1 AND id IN (
-			SELECT subject_id FROM subject_relations WHERE relation_type = %d
-		  ))`, seriesRelationType)
+		  AND (type <> 1 OR %s)`, query.SeriesVolumeKeepFilter("subjects"))
 	engine := query.NewEngine(dbPath, "")
 	result, err := engine.ExecuteRaw(ctx, sql)
 	if err != nil {
