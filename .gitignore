@@ -9,6 +9,7 @@ diff.py
 node_modules
 bgq/docs/missing-persons
 _site/*
+userscripts/refs/*
 
 # CI 生成的产物（发布到 Release，不进版本控制）
 duplicate_check_results.txt
