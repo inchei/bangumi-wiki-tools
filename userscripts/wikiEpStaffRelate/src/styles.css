@@ -243,6 +243,7 @@ html[data-theme='dark'] #wikiEpRelate .staff-record-item.unmatched:hover {
 .staff-name:hover {
   text-decoration: underline;
 }
+html[data-theme='dark'] .staff-name.staff-name-off,
 .staff-name-off {
   color: #909399;
   text-decoration: line-through;
