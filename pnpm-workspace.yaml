@@ -4,6 +4,7 @@ packages:
   - 'userscripts/wikiMissingPositions'
   - 'userscripts/wikiEpStaffRelate'
   - 'userscripts/wikiPersonAlias'
+  - 'userscripts/wikiVolToSeries'
 
 allowBuilds:
   esbuild: true

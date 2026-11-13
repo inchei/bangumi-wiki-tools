@@ -58,6 +58,12 @@
 
 [文档](userscripts/wikiEpStaffRelate/README.md) · [GreasyFork](https://greasyfork.org/zh-CN/scripts/552493) · [Bangumi 讨论](https://bgm.tv/group/topic/439326)
 
+### wikiVolToSeries
+
+用户脚本，在单行本第一卷条目页一键创建系列条目并自动关联原卷；infobox 由页面 DOM 结合模板反推，无额外网络请求。
+
+[文档](userscripts/wikiVolToSeries/README.md)
+
 ### Python 脚本
 
 使用 uv 进行依赖管理，运行脚本使用 `uv run script.py`。
