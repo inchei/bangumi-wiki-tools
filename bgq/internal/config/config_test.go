@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 func TestValidateFilterTreeLimits(t *testing.T) {
@@ -322,7 +322,7 @@ func TestFilterJSONMatchesYAML(t *testing.T) {
 			if yamlErr == nil || jsonErr == nil {
 				t.Fatalf("both decoders should reject: yaml=%v json=%v", yamlErr, jsonErr)
 			}
-			if yamlErr.Error() != jsonErr.Error() {
+			if !strings.HasSuffix(yamlErr.Error(), jsonErr.Error()) {
 				t.Fatalf("error mismatch: yaml=%q json=%q", yamlErr, jsonErr)
 			}
 		})

@@ -4,8 +4,8 @@ go 1.26.3
 
 require (
 	github.com/longbridgeapp/opencc v0.3.13
+	go.yaml.in/yaml/v4 v4.0.0
 	golang.org/x/text v0.40.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -228,6 +228,7 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/tools v0.8.0 // indirect
 	mvdan.cc/gofumpt v0.11.0 // indirect
 	mvdan.cc/unparam v0.0.0-20260818115549-3f964bcb5673 // indirect

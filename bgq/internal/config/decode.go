@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // UnmarshalJSON decodes a filter from the JSON sent by the HTTP API / Web UI.

@@ -19,7 +19,7 @@ import (
 	"unicode"
 
 	"github.com/longbridgeapp/opencc"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v4"
 )
 
 // const bangumiCommonBase = "https://raw.githubusercontent.com/bangumi/common/master"
