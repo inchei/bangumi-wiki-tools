@@ -53,6 +53,13 @@ def page_wrap(title, body):
             '</body></html>']
 
 
+def csv_row_count(path):
+    with open(path, newline='', encoding='utf-8-sig') as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        return sum(1 for _ in reader)
+
+
 pages = []
 downloads = []
 for fname in sorted(os.listdir(results_dir)):
@@ -60,7 +67,8 @@ for fname in sorted(os.listdir(results_dir)):
         continue
     src = os.path.join(results_dir, fname)
     shutil.copy(src, os.path.join(output_dir, fname))
-    downloads.append(fname)
+    row_count = csv_row_count(src)
+    downloads.append((fname, row_count))
     if fname in SKIP_HTML:
         continue
     if os.path.getsize(src) > HTML_MAX_BYTES:
@@ -98,7 +106,7 @@ for fname in sorted(os.listdir(results_dir)):
     out_name = fname[:-4] + '.html'
     with open(os.path.join(output_dir, out_name), 'w') as f:
         f.write('\n'.join(h))
-    pages.append((out_name, fname))
+    pages.append((out_name, fname, row_count))
 
 txt_src = 'duplicate_check_results.txt'
 if os.path.exists(txt_src):
@@ -117,7 +125,7 @@ if os.path.exists(txt_src):
     ])
     with open(os.path.join(output_dir, 'duplicate_check_results.html'), 'w') as f:
         f.write('\n'.join(h))
-    pages.append(('duplicate_check_results.html', 'duplicate_check_results.txt'))
+    pages.append(('duplicate_check_results.html', 'duplicate_check_results.txt', None))
 
 data_links = []
 for name in DATA_FILES:
@@ -134,7 +142,7 @@ for entry in sorted(os.listdir(results_dir)):
     shutil.copytree(parts_dir, dst_dir, dirs_exist_ok=True)
     for pf in sorted(os.listdir(dst_dir)):
         if pf.endswith('.csv'):
-            downloads.append(f'{entry}/{pf}')
+            downloads.append((f'{entry}/{pf}', csv_row_count(os.path.join(dst_dir, pf))))
 if data_links:
     with open(os.path.join(output_dir, 'data_version.txt'), 'w') as f:
         f.write(datetime.datetime.now().strftime('%Y-%m-%d'))
@@ -142,8 +150,9 @@ if data_links:
 
 idx_body = ['<h1>Bangumi 筛选结果</h1>',
             '<h2>浏览结果</h2><ul>']
-for out, src in pages:
-    idx_body.append(f'<li><a href="{html.escape(out)}" target="_blank">{html.escape(src)}</a></li>')
+for out, src, row_count in pages:
+    count_label = f'（{row_count} 条）' if row_count is not None else ''
+    idx_body.append(f'<li><a href="{html.escape(out)}" target="_blank">{html.escape(src)}</a>{count_label}</li>')
 if os.path.exists(os.path.join(output_dir, 'volume_order_report.html')):
     idx_body.append('<li><a href="volume_order_report.html" target="_blank">volume_order_report.html</a></li>')
 if os.path.isdir(os.path.join(output_dir, 'missing-persons')):
@@ -153,8 +162,8 @@ if data_links or downloads:
     idx_body.append('<h2>下载文件</h2><ul>')
     for name in data_links:
         idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a></li>')
-    for name in downloads:
-        idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a></li>')
+    for name, row_count in downloads:
+        idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a>（{row_count} 条）</li>')
     idx_body.append('</ul>')
 idx = page_wrap('筛选结果', idx_body)
 with open(os.path.join(output_dir, 'index.html'), 'w') as f:
