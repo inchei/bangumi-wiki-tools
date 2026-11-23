@@ -17,6 +17,7 @@ HTML_MAX_BYTES = 2_000_000
 SKIP_HTML = {
     'stale-realname-annotations.csv',
     'alias-annotate.csv',
+    'duplicate-staff-names.csv',
     'missing-cn-name-person.csv',
     'missing-cn-name-character.csv',
 }

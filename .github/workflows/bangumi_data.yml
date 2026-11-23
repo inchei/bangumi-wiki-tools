@@ -88,6 +88,11 @@ jobs:
           mkdir -p results
           uv run find_stale_realname_annotations.py --archive-dir bangumi_archive --aliases-file person_alias.json --output results/stale-realname-annotations.csv
 
+      - name: 清理动画职位字段中的重复人名
+        run: |
+          mkdir -p results
+          uv run dedupe_staff_names.py --out results/duplicate-staff-names.csv
+
       - name: 查找可转换简体中文名的人物/角色
         run: |
           mkdir -p results

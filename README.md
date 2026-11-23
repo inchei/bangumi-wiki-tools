@@ -75,6 +75,8 @@
 | [check_volume_order.py](check_volume_order.py) | 检查单行本卷序一致性，输出 HTML 报告（`uv run check_volume_order.py --archive-dir bangumi_archive --output report.html`） |
 | [find_dup_person_name.py](find_dup_person_name.py) | 查找简体中文名同名人物，输出 CSV 供 `sync_index.py` 同步到目录 |
 | [extract_col.py](extract_col.py) | 从 CSV 列的 `key：value` 或 `name（role）` 中提取信息到新列 |
+| [find_nested_positions.py](find_nested_positions.py) | 统计 Archive 动画职位字段中的 `；其他职位：值`，按 bgq 生成的动画职位表标注是否为真实职位（`uv run find_nested_positions.py [subject.jsonlines] --out anime_nested_positions_stats.csv`） |
+| [dedupe_staff_names.py](dedupe_staff_names.py) | 删除动画职位字段内顿号分隔的重复纯人名，输出 `id,infobox` CSV（`uv run dedupe_staff_names.py [subject.jsonlines] --out duplicate_staff_names.csv`）；每周结果提供 `duplicate-staff-names.csv` 下载 |
 | [find_missing_persons.py](find_missing_persons.py) | 扫描动画条目 infobox 职位字段，找出出现 ≥2 次但未创建为人物的人员，生成 HTML 列表 |
 
 ## 每周更新产物
